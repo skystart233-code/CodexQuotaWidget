@@ -52,43 +52,51 @@
 ```powershell
 dotnet restore --ignore-failed-sources
 dotnet run --project .\src\CodexQuotaWidget.App\CodexQuotaWidget.App.csproj
+```
 
+---
 
 <a id="english"></a>
 
 ## English
 
-Your Codex quota, always visible and never in the way. A glance tells you what is left; a right-click gives you the controls.
+Ever been interrupted by a Codex limit right in the middle of a flow — only to realise your quota had been running low for a while?
 
-### Why it sticks
+**CodexQuotaWidget** keeps a tiny, always-on quota view in the corner of your screen. No tab switching, no terminal command, no digging through settings: just look up and know where you stand.
 
-- Toggle 5H and weekly quota with the actual remaining percentage
-- Minimal mode shows quota plus the next reset-card countdown
-- The whole widget turns red when weekly quota drops below 5%
-- Automatically finds the earliest available reset card and reminds you at 24h / 6h / 1h
-- Four themes, a custom tray emoji, and instant Chinese / English switching
-- Draggable, content-sized, and safely minimized to the tray
+### What it solves
 
-### Get going in 30 seconds
+| Situation | What CodexQuotaWidget does |
+| --- | --- |
+| Not sure whether the 5-hour or weekly quota is the one running out | Switch between both views and see the actual remaining percentage |
+| Your desktop already has enough windows | Use minimal mode: just the quota and next countdown, quietly in the corner |
+| You notice the limit only after it interrupts you | The whole widget turns red when weekly quota drops below 5% |
+| You cannot remember when a quota resets | Tracks the nearest reset-card expiry and notifies you at 24h / 6h / 1h |
+| You want it to feel like your setup | Pick from four themes, set a custom tray emoji, or switch Chinese / English instantly |
+| You do not want another taskbar app in the way | Drag it anywhere, let it size itself to content, and close it back to the system tray |
 
-1. Download and unzip the latest `CodexQuotaWidget-*-win-x64.zip` from [Releases](https://github.com/skystart233-code/CodexQuotaWidget/releases/latest).
-2. Install the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0), then ensure the signed-in `codex` CLI is on `PATH`.
-3. Start `CodexQuotaWidget.App.exe`. Right-click the widget or tray icon to change language, theme, quota window, or emoji.
+### Get started in 30 seconds
 
-### Privacy, plainly
+1. Go to [Releases](https://github.com/skystart233-code/CodexQuotaWidget/releases/latest), download, and unzip `CodexQuotaWidget-*-win-x64.zip`.
+2. Install the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0), then make sure the signed-in `codex` CLI is on your system `PATH`.
+3. Double-click `CodexQuotaWidget.App.exe`. Right-click the widget or tray icon whenever you want to switch language, theme, quota view, or emoji.
 
-Quota data comes from the local `codex app-server`, never browser scraping. Reset-card lookup uses only your existing local Codex credentials; expiry data and preferences stay in `%LOCALAPPDATA%\CodexQuotaWidget`. No token, quota data, or activity is uploaded. Read [SECURITY.md](SECURITY.md) for the details.
+That is it — no extra setup needed.
 
-> The app-server and reset-card endpoints can change as Codex evolves. If the reset-card lookup is unavailable, quota monitoring keeps working and the last successful countdown remains visible.
+### Privacy, without the fine print
 
-### Build from source
+Quota data comes directly from the signed-in local `codex app-server`; there is no browser scraping. Reset-card lookup uses the credentials already on your machine, and results plus preferences stay in `%LOCALAPPDATA%\CodexQuotaWidget`. The app does not upload tokens, quota data, or activity records to any third party. See [SECURITY.md](SECURITY.md) for the details.
+
+> Heads-up: if Codex changes its APIs, reset-card lookup may temporarily stop working. Quota monitoring still works, and the widget keeps the last successfully retrieved countdown.
+
+### Run from source
 
 ```powershell
 dotnet restore --ignore-failed-sources
 dotnet run --project .\src\CodexQuotaWidget.App\CodexQuotaWidget.App.csproj
 ```
 
-## For contributors
+## Contributing
 
 ```powershell
 dotnet build .\CodexQuotaWidget.slnx --no-restore
