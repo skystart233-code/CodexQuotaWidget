@@ -1,0 +1,97 @@
+<Window x:Class="CodexQuotaWidget.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Codex 额度浮窗"
+        SizeToContent="WidthAndHeight"
+        WindowStyle="None" AllowsTransparency="True"
+        Background="Transparent" Topmost="True"
+        ShowInTaskbar="False" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen">
+    <Border x:Name="RootBorder" CornerRadius="15" BorderThickness="1" Padding="10,7"
+            MouseLeftButtonDown="DragSurface_OnMouseLeftButtonDown"
+            MouseRightButtonUp="RootBorder_OnMouseRightButtonUp"
+            ToolTip="右键设置 · 双击切换极简/完整模式">
+        <Grid>
+            <StackPanel x:Name="MinimalPanel" Orientation="Horizontal" VerticalAlignment="Center">
+                <Ellipse x:Name="MiniStatusDot" Width="6" Height="6" Margin="0,0,7,0" />
+                <TextBlock x:Name="MiniPeriodText" FontSize="11" FontWeight="SemiBold"
+                           VerticalAlignment="Center" Margin="0,0,5,0" />
+                <TextBlock x:Name="MiniValueText" FontSize="16" FontWeight="Bold"
+                           VerticalAlignment="Center" />
+                <TextBlock x:Name="MiniDivider" Text="│" FontSize="11" Margin="8,0,8,0"
+                           VerticalAlignment="Center" />
+                <TextBlock x:Name="MiniResetCountdownText" Text="卡 --" FontSize="11" FontWeight="SemiBold"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+
+            <Grid x:Name="ExpandedPanel" MinWidth="244" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <TextBlock x:Name="BrandText" Text="CODEX QUOTA" FontSize="10" FontWeight="SemiBold"
+                               VerticalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="↻" Click="RefreshButton_OnClick" Style="{DynamicResource TinyButton}" ToolTip="立即刷新" />
+                        <Button Content="—" Click="MinimalButton_OnClick" Style="{DynamicResource TinyButton}" ToolTip="切换极简模式" />
+                        <Button Content="⚙" Click="SettingsButton_OnClick" Style="{DynamicResource TinyButton}" ToolTip="显示设置" />
+                        <Button Content="×" Click="ExitButton_OnClick" Style="{DynamicResource TinyButton}" ToolTip="退出" />
+                    </StackPanel>
+                </Grid>
+
+                <Grid Grid.Row="1" Margin="0,6,0,4">
+                    <TextBlock x:Name="ValueText" Text="--" FontSize="32" FontWeight="SemiBold"
+                               VerticalAlignment="Center" />
+                    <StackPanel Margin="82,2,0,0" VerticalAlignment="Center">
+                        <TextBlock x:Name="PeriodText" FontSize="14" FontWeight="SemiBold" />
+                        <TextBlock x:Name="AvailabilityText" Text="等待首次同步" FontSize="11" Margin="0,2,0,0" />
+                    </StackPanel>
+                </Grid>
+
+                <Border x:Name="ResetCardPanel" Grid.Row="2" CornerRadius="7" Padding="8,5" Margin="0,0,0,5"
+                        ToolTip="自动读取本机 Codex 账号中最早到期的可用重置卡">
+                    <Grid>
+                        <TextBlock x:Name="ResetCardText" Text="重置卡 --" FontSize="10" />
+                        <TextBlock x:Name="ResetExpiryText" Text="正在查询到期时间" FontSize="10" HorizontalAlignment="Right" />
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Row="3">
+                    <Ellipse x:Name="StatusDot" Width="6" Height="6" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                    <TextBlock x:Name="StatusText" Text="正在启动…" FontSize="10" Margin="11,0,0,0" />
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+
+    <Window.Resources>
+        <Style x:Key="TinyButton" TargetType="Button">
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="21" />
+            <Setter Property="Margin" Value="2,0,0,0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonRoot" CornerRadius="6" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonRoot" Property="Background" Value="#22FFFFFF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+</Window>

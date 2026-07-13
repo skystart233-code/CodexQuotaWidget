@@ -1,0 +1,82 @@
+<Window x:Class="CodexQuotaWidget.App.TrayEmojiDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="托盘 Emoji" SizeToContent="WidthAndHeight"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+    <Border x:Name="DialogBorder" Width="282" CornerRadius="15" BorderThickness="1" Padding="16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0">
+                <TextBlock x:Name="TitleText" Text="托盘 Emoji" FontSize="14" FontWeight="SemiBold"
+                           MouseLeftButtonDown="DialogBorder_OnMouseLeftButtonDown" />
+                <Button x:Name="CloseButton" Content="×" Width="24" Height="22" HorizontalAlignment="Right"
+                        Click="CloseButton_OnClick" Style="{DynamicResource FlatButton}" />
+            </Grid>
+
+            <TextBlock x:Name="HintText" Grid.Row="1" Margin="0,5,0,10" FontSize="10.5"
+                       Text="输入一个 Emoji 或符号，保存后立即显示在托盘。" />
+
+            <TextBox x:Name="EmojiTextBox" Grid.Row="2" Height="46" FontFamily="Segoe UI Emoji"
+                     FontSize="27" MaxLength="16" TextAlignment="Center"
+                     VerticalContentAlignment="Center" BorderThickness="1" />
+
+            <Grid Grid.Row="3" Margin="0,8,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Button x:Name="PresetOne" Grid.Column="0" Content="⚡" Tag="⚡" Click="PresetButton_OnClick" Style="{DynamicResource EmojiButton}" />
+                <Button x:Name="PresetTwo" Grid.Column="1" Content="🤖" Tag="🤖" Click="PresetButton_OnClick" Style="{DynamicResource EmojiButton}" />
+                <Button x:Name="PresetThree" Grid.Column="2" Content="🧠" Tag="🧠" Click="PresetButton_OnClick" Style="{DynamicResource EmojiButton}" />
+                <Button x:Name="PresetFour" Grid.Column="3" Content="📊" Tag="📊" Click="PresetButton_OnClick" Style="{DynamicResource EmojiButton}" />
+            </Grid>
+
+            <Grid Grid.Row="4">
+                <TextBlock x:Name="ErrorText" Text="请只输入一个 Emoji 或符号" FontSize="10"
+                           VerticalAlignment="Center" Visibility="Collapsed" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="CancelButton" Content="取消" Width="58" Height="28" Margin="0,0,6,0" IsCancel="True"
+                            Style="{DynamicResource ActionButton}" />
+                    <Button Content="保存" Width="58" Height="28" IsDefault="True"
+                            Click="SaveButton_OnClick" Style="{DynamicResource PrimaryButton}" />
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+
+    <Window.Resources>
+        <Style x:Key="FlatButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style x:Key="EmojiButton" TargetType="Button">
+            <Setter Property="Height" Value="31" />
+            <Setter Property="Margin" Value="2,0" />
+            <Setter Property="FontFamily" Value="Segoe UI Emoji" />
+            <Setter Property="FontSize" Value="17" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style x:Key="ActionButton" TargetType="Button">
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource ActionButton}">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="#FF2F80ED" />
+        </Style>
+    </Window.Resources>
+</Window>
