@@ -47,7 +47,7 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button x:Name="CancelButton" Content="取消" Width="58" Height="28" Margin="0,0,6,0" IsCancel="True"
                             Style="{DynamicResource ActionButton}" />
-                    <Button Content="保存" Width="58" Height="28" IsDefault="True"
+                    <Button x:Name="SaveButton" Content="保存" Width="58" Height="28" IsDefault="True"
                             Click="SaveButton_OnClick" Style="{DynamicResource PrimaryButton}" />
                 </StackPanel>
             </Grid>

@@ -36,10 +36,10 @@
                     <TextBlock x:Name="BrandText" Text="CODEX QUOTA" FontSize="10" FontWeight="SemiBold"
                                VerticalAlignment="Center" />
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="↻" Click="RefreshButton_OnClick" Style="{DynamicResource TinyButton}" ToolTip="立即刷新" />
-                        <Button Content="—" Click="MinimalButton_OnClick" Style="{DynamicResource TinyButton}" ToolTip="切换极简模式" />
-                        <Button Content="⚙" Click="SettingsButton_OnClick" Style="{DynamicResource TinyButton}" ToolTip="显示设置" />
-                        <Button Content="×" Click="ExitButton_OnClick" Style="{DynamicResource TinyButton}" ToolTip="退出" />
+                        <Button x:Name="RefreshButton" Content="↻" Click="RefreshButton_OnClick" Style="{DynamicResource TinyButton}" ToolTip="立即刷新" />
+                        <Button x:Name="MinimalButton" Content="—" Click="MinimalButton_OnClick" Style="{DynamicResource TinyButton}" ToolTip="切换极简模式" />
+                        <Button x:Name="SettingsButton" Content="⚙" Click="SettingsButton_OnClick" Style="{DynamicResource TinyButton}" ToolTip="显示设置" />
+                        <Button x:Name="ExitButton" Content="×" Click="ExitButton_OnClick" Style="{DynamicResource TinyButton}" ToolTip="退出" />
                     </StackPanel>
                 </Grid>
 

@@ -8,9 +8,18 @@ namespace CodexQuotaWidget.App;
 
 public partial class TrayEmojiDialog : Window
 {
-    public TrayEmojiDialog(string currentEmoji, WidgetTheme theme)
+    public TrayEmojiDialog(string currentEmoji, WidgetTheme theme, UiLanguage language)
     {
         InitializeComponent();
+        Title = UiText.For(language, "托盘 Emoji", "Tray Emoji");
+        TitleText.Text = Title;
+        HintText.Text = UiText.For(
+            language,
+            "输入一个 Emoji 或符号，保存后立即显示在托盘。",
+            "Enter one emoji or symbol. It appears in the tray right away.");
+        ErrorText.Text = UiText.For(language, "请只输入一个 Emoji 或符号", "Use one emoji or symbol only");
+        CancelButton.Content = UiText.For(language, "取消", "Cancel");
+        SaveButton.Content = UiText.For(language, "保存", "Save");
         EmojiTextBox.Text = currentEmoji;
         ApplyTheme(theme);
         Loaded += (_, _) =>

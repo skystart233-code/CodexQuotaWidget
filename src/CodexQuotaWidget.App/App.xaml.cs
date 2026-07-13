@@ -33,6 +33,7 @@ public partial class App : System.Windows.Application
                 _settings.SelectedPeriod,
                 _settings.IsMinimal,
                 _settings.Theme,
+                _settings.Language,
                 _settings.ResetCreditExpiresAt,
                 _settings.ResetCreditReminderEnabled);
             RestorePosition(_window, _settings);
@@ -40,6 +41,7 @@ public partial class App : System.Windows.Application
             _window.PeriodSelected += SelectPeriod;
             _window.MinimalModeSelected += SelectMinimalMode;
             _window.ThemeSelected += SelectTheme;
+            _window.LanguageSelected += SelectLanguage;
             _window.TrayEmojiRequested += ConfigureTrayEmoji;
             _window.ResetReminderToggled += SetResetReminderEnabled;
             _window.ExitRequested += () => _ = ShutdownAsync();
@@ -54,7 +56,7 @@ public partial class App : System.Windows.Application
         {
             WriteStartupFailure(exception);
             System.Windows.MessageBox.Show(
-                "Codex 额度浮窗启动失败。诊断信息已写入本机日志。",
+                T("Codex 额度浮窗启动失败。诊断信息已写入本机日志。", "Codex Quota Widget could not start. Diagnostic details were written to the local log."),
                 "CodexQuotaWidget",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
@@ -89,7 +91,7 @@ public partial class App : System.Windows.Application
         await _refreshGate.WaitAsync(_lifetime.Token).ConfigureAwait(false);
         try
         {
-            await Dispatcher.InvokeAsync(() => _window.SetStatus("正在同步…", isError: false));
+            await Dispatcher.InvokeAsync(() => _window.SetStatus(T("正在同步…", "Syncing…"), isError: false));
             if (forceReconnect || _service is null)
             {
                 await DisposeServiceAsync().ConfigureAwait(false);
@@ -113,7 +115,7 @@ public partial class App : System.Windows.Application
             await DisposeServiceAsync().ConfigureAwait(false);
             var message = exception.InnerException?.Message ?? exception.Message;
             await Dispatcher.InvokeAsync(() => _window?.SetStatus(
-                $"同步失败：{Shorten(message, 48)}",
+                $"{T("同步失败：", "Sync failed: ")}{Shorten(message, 48)}",
                 isError: true));
         }
         finally
@@ -128,7 +130,7 @@ public partial class App : System.Windows.Application
         _ = Dispatcher.InvokeAsync(() =>
         {
             _window?.RenderSnapshot(snapshot, _settings.SelectedPeriod);
-            _window?.SetStatus($"已同步 {snapshot.SyncedAt:HH:mm:ss}", isError: false);
+            _window?.SetStatus($"{T("已同步 ", "Synced ")}{snapshot.SyncedAt:HH:mm:ss}", isError: false);
             CheckResetReminder();
         });
     }
@@ -176,6 +178,20 @@ public partial class App : System.Windows.Application
         UpdateTrayChecks();
     }
 
+    private void SelectLanguage(UiLanguage language)
+    {
+        _settings.Language = language;
+        _settingsStore.Save(_settings);
+        _window?.SetLanguage(language);
+        if (_snapshot is not null)
+        {
+            _window?.RenderSnapshot(_snapshot, _settings.SelectedPeriod);
+            _window?.SetStatus($"{T("已同步 ", "Synced ")}{_snapshot.SyncedAt:HH:mm:ss}", isError: false);
+        }
+
+        RebuildTrayMenu();
+    }
+
     private void ConfigureTrayEmoji()
     {
         if (_window is null)
@@ -183,7 +199,7 @@ public partial class App : System.Windows.Application
             return;
         }
 
-        var dialog = new TrayEmojiDialog(_settings.TrayEmoji, _settings.Theme);
+        var dialog = new TrayEmojiDialog(_settings.TrayEmoji, _settings.Theme, _settings.Language);
         if (_window.IsVisible)
         {
             dialog.Owner = _window;
@@ -288,14 +304,16 @@ public partial class App : System.Windows.Application
 
         var remainingText = level switch
         {
-            ResetReminderLevel.Within1Hour => "不足 1 小时",
-            ResetReminderLevel.Within6Hours => "不足 6 小时",
-            _ => "不足 24 小时"
+            ResetReminderLevel.Within1Hour => T("不足 1 小时", "within 1 hour"),
+            ResetReminderLevel.Within6Hours => T("不足 6 小时", "within 6 hours"),
+            _ => T("不足 24 小时", "within 24 hours")
         };
         _trayIcon?.ShowBalloonTip(
             8_000,
-            "Codex 重置卡即将到期",
-            $"最近一张将在 {expiresAt.ToLocalTime():MM-dd HH:mm} 到期（{remainingText}），当前共 {availableCount} 张可用。",
+            T("Codex 重置卡即将到期", "Codex reset card expires soon"),
+            T(
+                $"最近一张将在 {expiresAt.ToLocalTime():MM-dd HH:mm} 到期（{remainingText}），当前共 {availableCount} 张可用。",
+                $"The next card expires {expiresAt.ToLocalTime():MM-dd HH:mm} ({remainingText}). {availableCount} card(s) available."),
             Forms.ToolTipIcon.Warning);
         _settings.LastResetReminderKey = key;
         _settingsStore.Save(_settings);
@@ -303,31 +321,56 @@ public partial class App : System.Windows.Application
 
     private void CreateTrayIcon()
     {
+        _trayEmojiIcon = TrayEmojiIconFactory.Create(_settings.TrayEmoji);
+        _trayIcon = new Forms.NotifyIcon
+        {
+            Icon = _trayEmojiIcon,
+            Text = T("Codex 额度浮窗", "Codex Quota Widget"),
+            Visible = true,
+            ContextMenuStrip = CreateTrayMenu()
+        };
+        _trayIcon.DoubleClick += (_, _) => Dispatcher.Invoke(ShowWindow);
+        UpdateTrayChecks();
+    }
+
+    private Forms.ContextMenuStrip CreateTrayMenu()
+    {
         var menu = new Forms.ContextMenuStrip();
-        var showItem = new Forms.ToolStripMenuItem("显示浮窗");
+        var showItem = new Forms.ToolStripMenuItem(T("显示浮窗", "Show widget"));
         showItem.Click += (_, _) => Dispatcher.Invoke(ShowWindow);
-        var minimalItem = new Forms.ToolStripMenuItem("极简模式") { Name = "Minimal" };
+        var minimalItem = new Forms.ToolStripMenuItem(T("极简模式", "Minimal mode")) { Name = "Minimal" };
         minimalItem.Click += (_, _) => Dispatcher.Invoke(() => SelectMinimalMode(!_settings.IsMinimal));
-        var fiveHoursItem = new Forms.ToolStripMenuItem("显示 5H 剩余") { Name = "FiveHours" };
+        var fiveHoursItem = new Forms.ToolStripMenuItem(T("显示 5H 剩余", "Show 5H remaining")) { Name = "FiveHours" };
         fiveHoursItem.Click += (_, _) => Dispatcher.Invoke(() => SelectPeriod(QuotaPeriod.FiveHours));
-        var weekItem = new Forms.ToolStripMenuItem("显示周额度剩余") { Name = "Week" };
+        var weekItem = new Forms.ToolStripMenuItem(T("显示周额度剩余", "Show weekly remaining")) { Name = "Week" };
         weekItem.Click += (_, _) => Dispatcher.Invoke(() => SelectPeriod(QuotaPeriod.Week));
-        var refreshItem = new Forms.ToolStripMenuItem("立即刷新");
+        var refreshItem = new Forms.ToolStripMenuItem(T("立即刷新", "Refresh now"));
         refreshItem.Click += (_, _) => _ = RefreshAsync(forceReconnect: false, forceResetCredits: true);
-        var themeMenu = new Forms.ToolStripMenuItem("主题") { Name = "Themes" };
+        var themeMenu = new Forms.ToolStripMenuItem(T("主题", "Theme")) { Name = "Themes" };
         foreach (var theme in Enum.GetValues<WidgetTheme>())
         {
             var captured = theme;
-            var item = new Forms.ToolStripMenuItem(ThemeLabel(theme)) { Name = $"Theme_{theme}" };
+            var item = new Forms.ToolStripMenuItem(UiText.Theme(theme, _settings.Language)) { Name = $"Theme_{theme}" };
             item.Click += (_, _) => Dispatcher.Invoke(() => SelectTheme(captured));
             themeMenu.DropDownItems.Add(item);
         }
-        var reminderItem = new Forms.ToolStripMenuItem("重置卡到期通知") { Name = "ResetReminder" };
+        var languageMenu = new Forms.ToolStripMenuItem(T("语言", "Language")) { Name = "Language" };
+        foreach (var language in Enum.GetValues<UiLanguage>())
+        {
+            var captured = language;
+            var item = new Forms.ToolStripMenuItem(language == UiLanguage.Chinese ? "中文" : "English")
+            {
+                Name = $"Language_{language}"
+            };
+            item.Click += (_, _) => Dispatcher.Invoke(() => SelectLanguage(captured));
+            languageMenu.DropDownItems.Add(item);
+        }
+        var reminderItem = new Forms.ToolStripMenuItem(T("重置卡到期通知", "Reset-card expiry notifications")) { Name = "ResetReminder" };
         reminderItem.Click += (_, _) => Dispatcher.Invoke(
             () => SetResetReminderEnabled(!_settings.ResetCreditReminderEnabled));
-        var emojiItem = new Forms.ToolStripMenuItem("自定义托盘 Emoji…");
+        var emojiItem = new Forms.ToolStripMenuItem(T("自定义托盘 Emoji…", "Customize tray Emoji…"));
         emojiItem.Click += (_, _) => Dispatcher.Invoke(ConfigureTrayEmoji);
-        var exitItem = new Forms.ToolStripMenuItem("退出");
+        var exitItem = new Forms.ToolStripMenuItem(T("退出", "Exit"));
         exitItem.Click += (_, _) => Dispatcher.Invoke(() => _ = ShutdownAsync());
         menu.Items.AddRange([
             showItem,
@@ -335,22 +378,27 @@ public partial class App : System.Windows.Application
             fiveHoursItem,
             weekItem,
             themeMenu,
+            languageMenu,
             emojiItem,
             reminderItem,
             refreshItem,
             new Forms.ToolStripSeparator(),
             exitItem
         ]);
+        return menu;
+    }
 
-        _trayEmojiIcon = TrayEmojiIconFactory.Create(_settings.TrayEmoji);
-        _trayIcon = new Forms.NotifyIcon
+    private void RebuildTrayMenu()
+    {
+        if (_trayIcon is null)
         {
-            Icon = _trayEmojiIcon,
-            Text = "Codex 额度浮窗",
-            Visible = true,
-            ContextMenuStrip = menu
-        };
-        _trayIcon.DoubleClick += (_, _) => Dispatcher.Invoke(ShowWindow);
+            return;
+        }
+
+        var oldMenu = _trayIcon.ContextMenuStrip;
+        _trayIcon.ContextMenuStrip = CreateTrayMenu();
+        _trayIcon.Text = T("Codex 额度浮窗", "Codex Quota Widget");
+        oldMenu?.Dispose();
         UpdateTrayChecks();
     }
 
@@ -387,16 +435,19 @@ public partial class App : System.Windows.Application
                 }
             }
         }
+        if (menu.Items["Language"] is Forms.ToolStripMenuItem languages)
+        {
+            foreach (Forms.ToolStripItem raw in languages.DropDownItems)
+            {
+                if (raw is Forms.ToolStripMenuItem item)
+                {
+                    item.Checked = item.Name == $"Language_{_settings.Language}";
+                }
+            }
+        }
     }
 
-    private static string ThemeLabel(WidgetTheme theme) => theme switch
-    {
-        WidgetTheme.Midnight => "深夜蓝",
-        WidgetTheme.Graphite => "石墨黑",
-        WidgetTheme.Paper => "纸张白",
-        WidgetTheme.Aurora => "极光绿",
-        _ => theme.ToString()
-    };
+    private string T(string chinese, string english) => UiText.For(_settings.Language, chinese, english);
 
     private void ShowWindow()
     {

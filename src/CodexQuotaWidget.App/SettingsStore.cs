@@ -12,11 +12,18 @@ public enum WidgetTheme
     Aurora
 }
 
+public enum UiLanguage
+{
+    Chinese,
+    English
+}
+
 public sealed class WidgetSettings
 {
     public QuotaPeriod SelectedPeriod { get; set; } = QuotaPeriod.Week;
     public bool IsMinimal { get; set; } = true;
     public WidgetTheme Theme { get; set; } = WidgetTheme.Midnight;
+    public UiLanguage Language { get; set; } = UiLanguage.Chinese;
     public string TrayEmoji { get; set; } = TrayEmojiValue.Default;
     public DateTimeOffset? ResetCreditExpiresAt { get; set; }
     public bool ResetCreditReminderEnabled { get; set; } = true;
@@ -46,6 +53,10 @@ public sealed class SettingsStore
             if (!Enum.IsDefined(settings.Theme))
             {
                 settings.Theme = WidgetTheme.Midnight;
+            }
+            if (!Enum.IsDefined(settings.Language))
+            {
+                settings.Language = UiLanguage.Chinese;
             }
             if (!TrayEmojiValue.TryNormalize(settings.TrayEmoji, out var trayEmoji))
             {

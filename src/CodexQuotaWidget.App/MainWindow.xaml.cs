@@ -14,6 +14,7 @@ public partial class MainWindow : Window
     private QuotaPeriod _selectedPeriod;
     private bool _isMinimal;
     private WidgetTheme _theme;
+    private UiLanguage _language;
     private DateTimeOffset? _resetCreditExpiresAt;
     private DateTimeOffset? _resetCreditIssuedAt;
     private bool _resetReminderEnabled;
@@ -22,12 +23,17 @@ public partial class MainWindow : Window
     private bool _statusIsError;
     private bool _weekIsCritical;
     private double? _selectedRemaining;
+    private DateTimeOffset? _selectedResetsAt;
+    private int? _selectedWindowDurationMins;
+    private bool _selectedValueAvailable;
+    private bool _hasSnapshot;
     private readonly DispatcherTimer _countdownTimer;
 
     public MainWindow(
         QuotaPeriod selectedPeriod,
         bool isMinimal,
         WidgetTheme theme,
+        UiLanguage language,
         DateTimeOffset? resetCreditExpiresAt,
         bool resetReminderEnabled)
     {
@@ -38,6 +44,7 @@ public partial class MainWindow : Window
         };
         _countdownTimer.Tick += (_, _) => UpdateResetCardText();
         _countdownTimer.Start();
+        SetLanguage(language);
         SetSelectedPeriod(selectedPeriod);
         SetResetReminder(resetCreditExpiresAt, resetReminderEnabled);
         ApplyTheme(theme);
@@ -63,16 +70,39 @@ public partial class MainWindow : Window
     public event Action<QuotaPeriod>? PeriodSelected;
     public event Action<bool>? MinimalModeSelected;
     public event Action<WidgetTheme>? ThemeSelected;
+    public event Action<UiLanguage>? LanguageSelected;
     public event Action? TrayEmojiRequested;
     public event Action<bool>? ResetReminderToggled;
     public event Action? ExitRequested;
     public event Action<double, double>? PositionChanged;
 
+    public void SetLanguage(UiLanguage language)
+    {
+        _language = language;
+        Title = UiText.For(language, "Codex 额度浮窗", "Codex Quota Widget");
+        RootBorder.ToolTip = UiText.For(language,
+            "右键设置 · 双击切换极简/完整模式",
+            "Right-click for settings · double-click to toggle minimal mode");
+        RefreshButton.ToolTip = UiText.For(language, "立即刷新", "Refresh now");
+        MinimalButton.ToolTip = UiText.For(language, "切换极简模式", "Switch to minimal mode");
+        SettingsButton.ToolTip = UiText.For(language, "显示设置", "Open settings");
+        ExitButton.ToolTip = UiText.For(language, "退出", "Exit");
+        SetSelectedPeriod(_selectedPeriod);
+        UpdateQuotaDetails();
+        UpdateResetCardText();
+        if (!_hasSnapshot)
+        {
+            StatusText.Text = UiText.For(language, "正在启动…", "Starting…");
+        }
+    }
+
     public void SetSelectedPeriod(QuotaPeriod period)
     {
         _selectedPeriod = period;
-        var label = period == QuotaPeriod.FiveHours ? "5H" : "周";
-        PeriodText.Text = period == QuotaPeriod.FiveHours ? "5H 剩余" : "周额度剩余";
+        var label = period == QuotaPeriod.FiveHours ? "5H" : UiText.For(_language, "周", "Wk");
+        PeriodText.Text = period == QuotaPeriod.FiveHours
+            ? UiText.For(_language, "5H 剩余", "5H remaining")
+            : UiText.For(_language, "周额度剩余", "Weekly remaining");
         MiniPeriodText.Text = label;
     }
 
@@ -132,23 +162,25 @@ public partial class MainWindow : Window
             _resetCreditCount = snapshot.ResetCreditCount;
         }
         _weekIsCritical = WeeklyQuotaAlertPolicy.IsCritical(snapshot.Week);
+        _hasSnapshot = true;
         SetSelectedPeriod(period);
         var value = snapshot.Get(period);
+        _selectedResetsAt = value.ResetsAt;
+        _selectedWindowDurationMins = value.WindowDurationMins;
+        _selectedValueAvailable = value.IsAvailable && value.RemainingPercent is not null;
         if (value.IsAvailable && value.RemainingPercent is double remaining)
         {
             _selectedRemaining = remaining;
             ValueText.Text = $"{remaining:0.#}%";
             MiniValueText.Text = $"{remaining:0.#}%";
-            AvailabilityText.Text = value.ResetsAt is DateTimeOffset reset
-                ? $"重置 {reset.ToLocalTime():MM-dd HH:mm}"
-                : $"{value.WindowDurationMins} 分钟窗口";
+            UpdateQuotaDetails();
         }
         else
         {
             _selectedRemaining = null;
             ValueText.Text = "--";
             MiniValueText.Text = "--";
-            AvailabilityText.Text = "此额度窗口不可用";
+            UpdateQuotaDetails();
         }
 
         UpdateResetCardText();
@@ -162,28 +194,57 @@ public partial class MainWindow : Window
         ApplyVisualState();
     }
 
+    private void UpdateQuotaDetails()
+    {
+        if (!_hasSnapshot)
+        {
+            AvailabilityText.Text = UiText.For(_language, "等待首次同步", "Waiting for first sync");
+            return;
+        }
+
+        if (!_selectedValueAvailable)
+        {
+            AvailabilityText.Text = UiText.For(_language, "此额度窗口不可用", "This quota window is unavailable");
+            return;
+        }
+
+        AvailabilityText.Text = _selectedResetsAt is DateTimeOffset reset
+            ? UiText.For(_language, $"重置 {reset.ToLocalTime():MM-dd HH:mm}", $"Resets {reset.ToLocalTime():MM-dd HH:mm}")
+            : UiText.For(_language, $"{_selectedWindowDurationMins} 分钟窗口", $"{_selectedWindowDurationMins} min window");
+    }
+
     private void UpdateResetCardText()
     {
-        ResetCardText.Text = _resetCreditCount is int count ? $"重置卡 {count} 张" : "重置卡 --";
+        ResetCardText.Text = _resetCreditCount is int count
+            ? UiText.For(_language, $"重置卡 {count} 张", $"Reset cards {count}")
+            : UiText.For(_language, "重置卡 --", "Reset cards --");
         var showCountdown = _resetCreditCount is > 0;
         MiniDivider.Visibility = showCountdown ? Visibility.Visible : Visibility.Collapsed;
         MiniResetCountdownText.Visibility = showCountdown ? Visibility.Visible : Visibility.Collapsed;
         if (_resetCreditExpiresAt is DateTimeOffset expiresAt)
         {
-            var countdown = ResetCreditCountdown.Format(DateTimeOffset.Now, expiresAt);
-            ResetExpiryText.Text = $"最近 {countdown}";
-            MiniResetCountdownText.Text = $"卡 {countdown}";
+            var countdown = UiText.ResetCardCountdown(_language, DateTimeOffset.Now, expiresAt);
+            ResetExpiryText.Text = UiText.For(_language, $"最近 {countdown}", $"Next {countdown}");
+            MiniResetCountdownText.Text = UiText.For(_language, $"卡 {countdown}", $"Card {countdown}");
             var localExpiry = expiresAt.ToLocalTime();
             var issued = _resetCreditIssuedAt is DateTimeOffset issuedAt
-                ? $"\n发放：{issuedAt.ToLocalTime():MM-dd HH:mm}"
+                ? UiText.For(_language,
+                    $"\n发放：{issuedAt.ToLocalTime():MM-dd HH:mm}",
+                    $"\nIssued {issuedAt.ToLocalTime():MM-dd HH:mm}")
                 : string.Empty;
-            MiniResetCountdownText.ToolTip = $"最早到期：{localExpiry:MM-dd HH:mm}{issued}";
-            ResetCardPanel.ToolTip = $"最早到期：{localExpiry:yyyy-MM-dd HH:mm}{issued}\n通知：{(_resetReminderEnabled ? "已开启" : "已关闭")}（右键切换）";
+            MiniResetCountdownText.ToolTip = UiText.For(_language,
+                $"最早到期：{localExpiry:MM-dd HH:mm}{issued}",
+                $"Next expiry: {localExpiry:MM-dd HH:mm}{issued}");
+            ResetCardPanel.ToolTip = UiText.For(_language,
+                $"最早到期：{localExpiry:yyyy-MM-dd HH:mm}{issued}\n通知：{(_resetReminderEnabled ? "已开启" : "已关闭")}（右键切换）",
+                $"Next expiry: {localExpiry:yyyy-MM-dd HH:mm}{issued}\nNotifications: {(_resetReminderEnabled ? "On" : "Off")} (right-click to change)");
         }
         else
         {
-            ResetExpiryText.Text = _resetCreditCount is 0 ? "暂无可用卡" : "正在查询到期时间";
-            MiniResetCountdownText.Text = "卡 --";
+            ResetExpiryText.Text = _resetCreditCount is 0
+                ? UiText.For(_language, "暂无可用卡", "No cards available")
+                : UiText.For(_language, "正在查询到期时间", "Checking expiry…");
+            MiniResetCountdownText.Text = UiText.For(_language, "卡 --", "Card --");
             MiniResetCountdownText.ToolTip = null;
         }
     }
@@ -245,27 +306,38 @@ public partial class MainWindow : Window
     private ContextMenu CreateSettingsMenu()
     {
         var menu = new ContextMenu();
-        menu.Items.Add(CreateCheckItem("极简模式", _isMinimal, () => MinimalModeSelected?.Invoke(!_isMinimal)));
+        menu.Items.Add(CreateCheckItem(UiText.For(_language, "极简模式", "Minimal mode"), _isMinimal,
+            () => MinimalModeSelected?.Invoke(!_isMinimal)));
         menu.Items.Add(new Separator());
-        menu.Items.Add(CreateCheckItem("显示 5H 剩余", _selectedPeriod == QuotaPeriod.FiveHours,
+        menu.Items.Add(CreateCheckItem(UiText.For(_language, "显示 5H 剩余", "Show 5H remaining"), _selectedPeriod == QuotaPeriod.FiveHours,
             () => PeriodSelected?.Invoke(QuotaPeriod.FiveHours)));
-        menu.Items.Add(CreateCheckItem("显示周额度剩余", _selectedPeriod == QuotaPeriod.Week,
+        menu.Items.Add(CreateCheckItem(UiText.For(_language, "显示周额度剩余", "Show weekly remaining"), _selectedPeriod == QuotaPeriod.Week,
             () => PeriodSelected?.Invoke(QuotaPeriod.Week)));
 
-        var themeMenu = new MenuItem { Header = "主题" };
+        var themeMenu = new MenuItem { Header = UiText.For(_language, "主题", "Theme") };
         foreach (var theme in Enum.GetValues<WidgetTheme>())
         {
             var captured = theme;
-            themeMenu.Items.Add(CreateCheckItem(ThemeLabel(theme), _theme == theme,
+            themeMenu.Items.Add(CreateCheckItem(UiText.Theme(theme, _language), _theme == theme,
                 () => ThemeSelected?.Invoke(captured)));
         }
         menu.Items.Add(themeMenu);
+        var languageMenu = new MenuItem { Header = UiText.For(_language, "语言", "Language") };
+        foreach (var language in Enum.GetValues<UiLanguage>())
+        {
+            var captured = language;
+            languageMenu.Items.Add(CreateCheckItem(
+                language == UiLanguage.Chinese ? "中文" : "English",
+                _language == language,
+                () => LanguageSelected?.Invoke(captured)));
+        }
+        menu.Items.Add(languageMenu);
         menu.Items.Add(new Separator());
-        var trayEmoji = new MenuItem { Header = "自定义托盘 Emoji…" };
+        var trayEmoji = new MenuItem { Header = UiText.For(_language, "自定义托盘 Emoji…", "Customize tray Emoji…") };
         trayEmoji.Click += (_, _) => TrayEmojiRequested?.Invoke();
         menu.Items.Add(trayEmoji);
         menu.Items.Add(CreateCheckItem(
-            "重置卡到期通知",
+            UiText.For(_language, "重置卡到期通知", "Reset-card expiry notifications"),
             _resetReminderEnabled,
             () => ResetReminderToggled?.Invoke(!_resetReminderEnabled)));
         return menu;
@@ -277,15 +349,6 @@ public partial class MainWindow : Window
         item.Click += (_, _) => action();
         return item;
     }
-
-    private static string ThemeLabel(WidgetTheme theme) => theme switch
-    {
-        WidgetTheme.Midnight => "深夜蓝",
-        WidgetTheme.Graphite => "石墨黑",
-        WidgetTheme.Paper => "纸张白",
-        WidgetTheme.Aurora => "极光绿",
-        _ => theme.ToString()
-    };
 
     private void ClampToVisibleArea()
     {
