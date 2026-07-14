@@ -21,6 +21,7 @@ public partial class TrayEmojiDialog : Window
         CancelButton.Content = UiText.For(language, "取消", "Cancel");
         SaveButton.Content = UiText.For(language, "保存", "Save");
         EmojiTextBox.Text = currentEmoji;
+        EmojiPreview.ToolTip = UiText.For(language, "托盘彩色预览", "Color tray preview");
         ApplyTheme(theme);
         Loaded += (_, _) =>
         {
@@ -49,6 +50,8 @@ public partial class TrayEmojiDialog : Window
         EmojiTextBox.Foreground = Brush(colors[2]);
         EmojiTextBox.Background = Brush(colors[4]);
         EmojiTextBox.BorderBrush = Brush(colors[1]);
+        EmojiPreviewBorder.Background = Brush(colors[4]);
+        EmojiPreviewBorder.BorderBrush = Brush(colors[1]);
         CancelButton.Foreground = Brush(colors[2]);
         CancelButton.Background = Brush(colors[4]);
         foreach (var button in new[] { PresetOne, PresetTwo, PresetThree, PresetFour })
@@ -66,6 +69,11 @@ public partial class TrayEmojiDialog : Window
             EmojiTextBox.CaretIndex = EmojiTextBox.Text.Length;
             ErrorText.Visibility = Visibility.Collapsed;
         }
+    }
+
+    private void EmojiTextBox_OnTextChanged(object sender, TextChangedEventArgs e)
+    {
+        EmojiPreview.Text = EmojiTextBox.Text;
     }
 
     private void SaveButton_OnClick(object sender, RoutedEventArgs e)

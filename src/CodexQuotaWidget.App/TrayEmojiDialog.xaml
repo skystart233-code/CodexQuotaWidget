@@ -1,6 +1,7 @@
 <Window x:Class="CodexQuotaWidget.App.TrayEmojiDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:emoji="clr-namespace:Emoji.Wpf;assembly=Emoji.Wpf"
         Title="托盘 Emoji" SizeToContent="WidthAndHeight"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ResizeMode="NoResize" ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
@@ -24,9 +25,21 @@
             <TextBlock x:Name="HintText" Grid.Row="1" Margin="0,5,0,10" FontSize="10.5"
                        Text="输入一个 Emoji 或符号，保存后立即显示在托盘。" />
 
-            <TextBox x:Name="EmojiTextBox" Grid.Row="2" Height="46" FontFamily="Segoe UI Emoji"
-                     FontSize="27" MaxLength="16" TextAlignment="Center"
-                     VerticalContentAlignment="Center" BorderThickness="1" />
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="52" />
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="EmojiTextBox" Grid.Column="0" Height="46" FontFamily="Segoe UI Emoji"
+                         FontSize="27" MaxLength="16" TextAlignment="Center"
+                         VerticalContentAlignment="Center" BorderThickness="1"
+                         TextChanged="EmojiTextBox_OnTextChanged" />
+                <Border x:Name="EmojiPreviewBorder" Grid.Column="1" Height="46" Margin="7,0,0,0" CornerRadius="8"
+                        BorderThickness="1">
+                    <emoji:TextBlock x:Name="EmojiPreview" FontSize="25" ColorBlend="False"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+            </Grid>
 
             <Grid Grid.Row="3" Margin="0,8,0,10">
                 <Grid.ColumnDefinitions>
@@ -35,10 +48,18 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Button x:Name="PresetOne" Grid.Column="0" Content="⚡" Tag="⚡" Click="PresetButton_OnClick" Style="{DynamicResource EmojiButton}" />
-                <Button x:Name="PresetTwo" Grid.Column="1" Content="🤖" Tag="🤖" Click="PresetButton_OnClick" Style="{DynamicResource EmojiButton}" />
-                <Button x:Name="PresetThree" Grid.Column="2" Content="🧠" Tag="🧠" Click="PresetButton_OnClick" Style="{DynamicResource EmojiButton}" />
-                <Button x:Name="PresetFour" Grid.Column="3" Content="📊" Tag="📊" Click="PresetButton_OnClick" Style="{DynamicResource EmojiButton}" />
+                <Button x:Name="PresetOne" Grid.Column="0" Tag="⚡" Click="PresetButton_OnClick" Style="{DynamicResource EmojiButton}">
+                    <emoji:TextBlock Text="⚡" FontSize="17" ColorBlend="False" />
+                </Button>
+                <Button x:Name="PresetTwo" Grid.Column="1" Tag="🤖" Click="PresetButton_OnClick" Style="{DynamicResource EmojiButton}">
+                    <emoji:TextBlock Text="🤖" FontSize="17" ColorBlend="False" />
+                </Button>
+                <Button x:Name="PresetThree" Grid.Column="2" Tag="🧠" Click="PresetButton_OnClick" Style="{DynamicResource EmojiButton}">
+                    <emoji:TextBlock Text="🧠" FontSize="17" ColorBlend="False" />
+                </Button>
+                <Button x:Name="PresetFour" Grid.Column="3" Tag="📊" Click="PresetButton_OnClick" Style="{DynamicResource EmojiButton}">
+                    <emoji:TextBlock Text="📊" FontSize="17" ColorBlend="False" />
+                </Button>
             </Grid>
 
             <Grid Grid.Row="4">

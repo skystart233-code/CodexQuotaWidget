@@ -5,6 +5,10 @@
     <ProjectReference Include="..\CodexQuotaWidget.Codex\CodexQuotaWidget.Codex.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Emoji.Wpf" Version="0.3.4" />
+  </ItemGroup>
+
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
@@ -12,9 +16,39 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
-    <Version>1.0.1</Version>
-    <AssemblyVersion>1.0.1.0</AssemblyVersion>
-    <FileVersion>1.0.1.0</FileVersion>
+    <Version>1.0.2</Version>
+    <AssemblyVersion>1.0.2.0</AssemblyVersion>
+    <FileVersion>1.0.2.0</FileVersion>
   </PropertyGroup>
+
+  <Target Name="StripBundledEmojiDebugDirectories" AfterTargets="PrepareForBundle" BeforeTargets="_GenerateSingleFileBundleInputCache"
+          Condition="'$(PublishSingleFile)' == 'true'">
+    <PropertyGroup>
+      <_SanitizedEmojiBundleDir>$(IntermediateOutputPath)sanitized-emoji\</_SanitizedEmojiBundleDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_EmojiBundleFiles Include="@(FilesToBundle)"
+          Condition="'%(FilesToBundle.Filename)' == 'Emoji.Wpf' Or '%(FilesToBundle.Filename)' == 'Typography.GlyphLayout' Or '%(FilesToBundle.Filename)' == 'Typography.OpenFont' Or '%(FilesToBundle.Filename)' == 'Stfu'" />
+    </ItemGroup>
+    <MakeDir Directories="$(_SanitizedEmojiBundleDir)" />
+    <Copy SourceFiles="@(_EmojiBundleFiles)"
+          DestinationFiles="@(_EmojiBundleFiles-&gt;'$(_SanitizedEmojiBundleDir)%(Filename)%(Extension)')" />
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\..\tools\Strip-PeDebugDirectory.ps1&quot; -EmojiWpfPath &quot;$(_SanitizedEmojiBundleDir)Emoji.Wpf.dll&quot; -GlyphLayoutPath &quot;$(_SanitizedEmojiBundleDir)Typography.GlyphLayout.dll&quot; -OpenFontPath &quot;$(_SanitizedEmojiBundleDir)Typography.OpenFont.dll&quot; -StfuPath &quot;$(_SanitizedEmojiBundleDir)Stfu.dll&quot;" />
+    <ItemGroup>
+      <FilesToBundle Remove="@(_EmojiBundleFiles)" />
+      <FilesToBundle Include="$(_SanitizedEmojiBundleDir)Emoji.Wpf.dll">
+        <RelativePath>Emoji.Wpf.dll</RelativePath>
+      </FilesToBundle>
+      <FilesToBundle Include="$(_SanitizedEmojiBundleDir)Typography.GlyphLayout.dll">
+        <RelativePath>Typography.GlyphLayout.dll</RelativePath>
+      </FilesToBundle>
+      <FilesToBundle Include="$(_SanitizedEmojiBundleDir)Typography.OpenFont.dll">
+        <RelativePath>Typography.OpenFont.dll</RelativePath>
+      </FilesToBundle>
+      <FilesToBundle Include="$(_SanitizedEmojiBundleDir)Stfu.dll">
+        <RelativePath>Stfu.dll</RelativePath>
+      </FilesToBundle>
+    </ItemGroup>
+  </Target>
 
 </Project>

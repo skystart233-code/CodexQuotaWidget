@@ -7,6 +7,7 @@ using System.Windows.Media.Imaging;
 using DrawingBitmap = System.Drawing.Bitmap;
 using DrawingIcon = System.Drawing.Icon;
 using DrawingSystemIcons = System.Drawing.SystemIcons;
+using EmojiTextBlock = Emoji.Wpf.TextBlock;
 
 namespace CodexQuotaWidget.App;
 
@@ -29,12 +30,12 @@ internal static class TrayEmojiIconFactory
                 CornerRadius = new CornerRadius(18),
                 Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(235, 35, 43, 56))
             });
-            surface.Children.Add(new TextBlock
+            surface.Children.Add(new EmojiTextBlock
             {
                 Text = emoji,
                 FontFamily = new System.Windows.Media.FontFamily("Segoe UI Emoji"),
-                FontSize = 39,
-                Foreground = System.Windows.Media.Brushes.White,
+                FontSize = 40,
+                ColorBlend = false,
                 TextAlignment = TextAlignment.Center,
                 HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                 VerticalAlignment = System.Windows.VerticalAlignment.Center,
