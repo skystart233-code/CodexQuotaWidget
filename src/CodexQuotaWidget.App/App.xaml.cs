@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using CodexQuotaWidget.Codex;
@@ -9,6 +10,10 @@ namespace CodexQuotaWidget.App;
 
 public partial class App : System.Windows.Application
 {
+    internal const string WatchCodexArgument = "--watch-codex";
+    internal const string ManagedByCodexArgument = "--managed-by-codex";
+    private const string WidgetMutexName = "Local\\CodexQuotaWidget.Widget";
+    private const string WatcherMutexName = "Local\\CodexQuotaWidget.CodexWatcher";
     private readonly CancellationTokenSource _lifetime = new();
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
     private readonly SettingsStore _settingsStore = new();
@@ -22,20 +27,52 @@ public partial class App : System.Windows.Application
     private IReadOnlyList<ResetCredit> _resetCredits = [];
     private DateTimeOffset? _lastResetCreditsAttemptAt;
     private bool _isExiting;
+    private bool _isWatcher;
+    private bool _managedByCodex;
+    private Mutex? _instanceMutex;
+    private Task? _codexLifecycleTask;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        _isWatcher = e.Args.Contains(WatchCodexArgument, StringComparer.OrdinalIgnoreCase);
+        _managedByCodex = e.Args.Contains(ManagedByCodexArgument, StringComparer.OrdinalIgnoreCase);
+
+        if (_isWatcher)
+        {
+            if (!TryAcquireSingleInstance(WatcherMutexName))
+            {
+                Shutdown();
+                return;
+            }
+
+            _ = RunCodexWatcherAsync(_lifetime.Token);
+            return;
+        }
+
+        if (!TryAcquireSingleInstance(WidgetMutexName))
+        {
+            Shutdown();
+            return;
+        }
+
         try
         {
             _settings = _settingsStore.Load();
+            if (_settings.FollowCodexLifecycle)
+            {
+                // Refresh the registered path after an app update or a moved release folder.
+                StartupRegistration.TrySetEnabled(true, out _);
+            }
             _window = new MainWindow(
                 _settings.SelectedPeriod,
                 _settings.IsMinimal,
                 _settings.Theme,
                 _settings.Language,
                 _settings.ResetCreditExpiresAt,
-                _settings.ResetCreditReminderEnabled);
+                _settings.ResetCreditReminderEnabled,
+                _settings.FollowCodexLifecycle);
             RestorePosition(_window, _settings);
             _window.RefreshRequested += () => _ = RefreshAsync(forceReconnect: false, forceResetCredits: true);
             _window.PeriodSelected += SelectPeriod;
@@ -44,6 +81,7 @@ public partial class App : System.Windows.Application
             _window.LanguageSelected += SelectLanguage;
             _window.TrayEmojiRequested += ConfigureTrayEmoji;
             _window.ResetReminderToggled += SetResetReminderEnabled;
+            _window.FollowCodexLifecycleToggled += SetFollowCodexLifecycle;
             _window.ExitRequested += () => _ = ShutdownAsync();
             _window.PositionChanged += SavePosition;
             _window.Show();
@@ -51,6 +89,10 @@ public partial class App : System.Windows.Application
             CreateTrayIcon();
             _ = RefreshAsync(forceReconnect: false, forceResetCredits: true);
             _ = RunPeriodicRefreshAsync(_lifetime.Token);
+            if (_managedByCodex || _settings.FollowCodexLifecycle)
+            {
+                BeginCodexLifecycleMonitoring();
+            }
         }
         catch (Exception exception)
         {
@@ -61,6 +103,47 @@ public partial class App : System.Windows.Application
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             Shutdown(-1);
+        }
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        _lifetime.Cancel();
+        ReleaseSingleInstance();
+        base.OnExit(e);
+    }
+
+    private bool TryAcquireSingleInstance(string name)
+    {
+        var mutex = new Mutex(initiallyOwned: true, name, out var createdNew);
+        if (!createdNew)
+        {
+            mutex.Dispose();
+            return false;
+        }
+
+        _instanceMutex = mutex;
+        return true;
+    }
+
+    private void ReleaseSingleInstance()
+    {
+        if (_instanceMutex is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _instanceMutex.ReleaseMutex();
+        }
+        catch (ApplicationException)
+        {
+        }
+        finally
+        {
+            _instanceMutex.Dispose();
+            _instanceMutex = null;
         }
     }
 
@@ -243,6 +326,104 @@ public partial class App : System.Windows.Application
         CheckResetReminder();
     }
 
+    private void SetFollowCodexLifecycle(bool enabled)
+    {
+        if (!StartupRegistration.TrySetEnabled(enabled, out var error) && enabled)
+        {
+            _window?.SetStatus(T("无法启用跟随 Codex：", "Could not enable Codex follow: ") + Shorten(error ?? string.Empty, 42), isError: true);
+            return;
+        }
+
+        _settings.FollowCodexLifecycle = enabled;
+        _settingsStore.Save(_settings);
+        _window?.SetFollowCodexLifecycle(enabled);
+        UpdateTrayChecks();
+
+        if (!enabled)
+        {
+            return;
+        }
+
+        if (!CodexLifecycle.TryLaunchWatcher(out _))
+        {
+            _window?.SetStatus(T("已开启跟随 Codex，下次登录后生效", "Codex follow is enabled and will apply at next sign-in"), isError: false);
+        }
+        BeginCodexLifecycleMonitoring();
+    }
+
+    private void BeginCodexLifecycleMonitoring()
+    {
+        if (_codexLifecycleTask is { IsCompleted: false })
+        {
+            return;
+        }
+
+        _codexLifecycleTask = RunCodexLifecycleAsync(_lifetime.Token);
+    }
+
+    private async Task RunCodexLifecycleAsync(CancellationToken cancellationToken)
+    {
+        var consecutiveMisses = 0;
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
+            {
+                if (!_settings.FollowCodexLifecycle)
+                {
+                    return;
+                }
+
+                if (CodexLifecycle.IsDesktopRunning())
+                {
+                    consecutiveMisses = 0;
+                    continue;
+                }
+
+                // The desktop app can briefly recreate its main window during an update.
+                // Three misses avoid closing the widget during that handover.
+                if (++consecutiveMisses < 3)
+                {
+                    continue;
+                }
+
+                await Dispatcher.InvokeAsync(() => _ = ShutdownAsync());
+                return;
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+    }
+
+    private async Task RunCodexWatcherAsync(CancellationToken cancellationToken)
+    {
+        var wasRunning = false;
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                if (!_settingsStore.Load().FollowCodexLifecycle)
+                {
+                    await Dispatcher.InvokeAsync(Shutdown);
+                    return;
+                }
+
+                var isRunning = CodexLifecycle.IsDesktopRunning();
+                if (isRunning && !wasRunning)
+                {
+                    CodexLifecycle.TryLaunchManagedWidget(out _);
+                }
+
+                wasRunning = isRunning;
+                await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+    }
+
     private async Task RefreshResetCreditsAsync(bool force)
     {
         var now = DateTimeOffset.Now;
@@ -340,6 +521,9 @@ public partial class App : System.Windows.Application
         showItem.Click += (_, _) => Dispatcher.Invoke(ShowWindow);
         var minimalItem = new Forms.ToolStripMenuItem(T("极简模式", "Minimal mode")) { Name = "Minimal" };
         minimalItem.Click += (_, _) => Dispatcher.Invoke(() => SelectMinimalMode(!_settings.IsMinimal));
+        var followCodexItem = new Forms.ToolStripMenuItem(T("跟随 Codex 启动和关闭", "Follow Codex start and exit")) { Name = "FollowCodex" };
+        followCodexItem.Click += (_, _) => Dispatcher.Invoke(
+            () => SetFollowCodexLifecycle(!_settings.FollowCodexLifecycle));
         var fiveHoursItem = new Forms.ToolStripMenuItem(T("显示 5H 剩余", "Show 5H remaining")) { Name = "FiveHours" };
         fiveHoursItem.Click += (_, _) => Dispatcher.Invoke(() => SelectPeriod(QuotaPeriod.FiveHours));
         var weekItem = new Forms.ToolStripMenuItem(T("显示周额度剩余", "Show weekly remaining")) { Name = "Week" };
@@ -375,6 +559,7 @@ public partial class App : System.Windows.Application
         menu.Items.AddRange([
             showItem,
             minimalItem,
+            followCodexItem,
             fiveHoursItem,
             weekItem,
             themeMenu,
@@ -420,6 +605,10 @@ public partial class App : System.Windows.Application
         if (menu.Items["Minimal"] is Forms.ToolStripMenuItem minimal)
         {
             minimal.Checked = _settings.IsMinimal;
+        }
+        if (menu.Items["FollowCodex"] is Forms.ToolStripMenuItem followCodex)
+        {
+            followCodex.Checked = _settings.FollowCodexLifecycle;
         }
         if (menu.Items["ResetReminder"] is Forms.ToolStripMenuItem reminder)
         {

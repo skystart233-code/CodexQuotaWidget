@@ -32,6 +32,7 @@
 | 记不清额度什么时候重置 | 自动追踪最近的重置时间，提前 24h / 6h / 1h 弹托盘提醒 |
 | 想要更贴合自己的使用习惯 | 四套主题、可自定义托盘图标、中英文一键切换 |
 | 不想让它占用任务栏或碍事 | 可自由拖动、随内容自适应大小，关闭即收进系统托盘 |
+| 希望它只在使用 Codex 时出现 | 打开“跟随 Codex 启动和关闭”：登录后静默等待，Codex 打开时显示，真正退出 Codex 后浮窗自动退出 |
 
 ### 30 秒开始用
 
@@ -40,6 +41,8 @@
 3. 双击运行 `CodexQuotaWidget.App.exe`。右键浮窗或托盘图标，随时切换语言、主题、额度视图和图标。
 
 就这么简单，不需要额外配置。
+
+> 想让它真正“跟着 Codex 走”？右键浮窗或托盘图标，勾选 **跟随 Codex 启动和关闭**。它会为当前 Windows 用户登记一个轻量后台等待器：登录后不显示浮窗，等你打开 Codex 才启动；退出 Codex 后浮窗也会在几秒内退出。随时取消勾选即可关闭此行为。
 
 ### 关于隐私,你可以放心
 
@@ -74,6 +77,7 @@ Ever been interrupted by a Codex limit right in the middle of a flow — only to
 | You cannot remember when a quota resets | Tracks the nearest reset-card expiry and notifies you at 24h / 6h / 1h |
 | You want it to feel like your setup | Pick from four themes, set a custom tray emoji, or switch Chinese / English instantly |
 | You do not want another taskbar app in the way | Drag it anywhere, let it size itself to content, and close it back to the system tray |
+| You only want it while Codex is open | Enable “Follow Codex start and exit”: it waits quietly after sign-in, appears with Codex, and exits when Codex truly quits |
 
 ### Get started in 30 seconds
 
@@ -82,6 +86,8 @@ Ever been interrupted by a Codex limit right in the middle of a flow — only to
 3. Double-click `CodexQuotaWidget.App.exe`. Right-click the widget or tray icon whenever you want to switch language, theme, quota view, or emoji.
 
 That is it — no extra setup needed.
+
+> Want it to genuinely follow Codex? Right-click the widget or tray icon and check **Follow Codex start and exit**. A lightweight per-user watcher waits silently after sign-in, starts the widget when Codex opens, then closes it a few seconds after Codex quits. Uncheck it any time to turn this behavior off.
 
 ### Privacy, without the fine print
 

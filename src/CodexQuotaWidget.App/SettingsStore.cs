@@ -27,6 +27,7 @@ public sealed class WidgetSettings
     public string TrayEmoji { get; set; } = TrayEmojiValue.Default;
     public DateTimeOffset? ResetCreditExpiresAt { get; set; }
     public bool ResetCreditReminderEnabled { get; set; } = true;
+    public bool FollowCodexLifecycle { get; set; }
     public string? LastResetReminderKey { get; set; }
     public double? Left { get; set; }
     public double? Top { get; set; }

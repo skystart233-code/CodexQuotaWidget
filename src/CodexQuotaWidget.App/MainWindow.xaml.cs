@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     private DateTimeOffset? _resetCreditExpiresAt;
     private DateTimeOffset? _resetCreditIssuedAt;
     private bool _resetReminderEnabled;
+    private bool _followCodexLifecycle;
     private int? _resetCreditCount;
     private bool _hasResetCreditDetails;
     private bool _statusIsError;
@@ -35,7 +36,8 @@ public partial class MainWindow : Window
         WidgetTheme theme,
         UiLanguage language,
         DateTimeOffset? resetCreditExpiresAt,
-        bool resetReminderEnabled)
+        bool resetReminderEnabled,
+        bool followCodexLifecycle)
     {
         InitializeComponent();
         _countdownTimer = new DispatcherTimer(DispatcherPriority.Background)
@@ -47,6 +49,7 @@ public partial class MainWindow : Window
         SetLanguage(language);
         SetSelectedPeriod(selectedPeriod);
         SetResetReminder(resetCreditExpiresAt, resetReminderEnabled);
+        SetFollowCodexLifecycle(followCodexLifecycle);
         ApplyTheme(theme);
         SetMinimalMode(isMinimal);
         LocationChanged += (_, _) => PositionChanged?.Invoke(Left, Top);
@@ -73,6 +76,7 @@ public partial class MainWindow : Window
     public event Action<UiLanguage>? LanguageSelected;
     public event Action? TrayEmojiRequested;
     public event Action<bool>? ResetReminderToggled;
+    public event Action<bool>? FollowCodexLifecycleToggled;
     public event Action? ExitRequested;
     public event Action<double, double>? PositionChanged;
 
@@ -105,6 +109,8 @@ public partial class MainWindow : Window
             : UiText.For(_language, "周额度剩余", "Weekly remaining");
         MiniPeriodText.Text = label;
     }
+
+    public void SetFollowCodexLifecycle(bool enabled) => _followCodexLifecycle = enabled;
 
     public void SetMinimalMode(bool isMinimal)
     {
@@ -308,6 +314,10 @@ public partial class MainWindow : Window
         var menu = new ContextMenu();
         menu.Items.Add(CreateCheckItem(UiText.For(_language, "极简模式", "Minimal mode"), _isMinimal,
             () => MinimalModeSelected?.Invoke(!_isMinimal)));
+        menu.Items.Add(CreateCheckItem(
+            UiText.For(_language, "跟随 Codex 启动和关闭", "Follow Codex start and exit"),
+            _followCodexLifecycle,
+            () => FollowCodexLifecycleToggled?.Invoke(!_followCodexLifecycle)));
         menu.Items.Add(new Separator());
         menu.Items.Add(CreateCheckItem(UiText.For(_language, "显示 5H 剩余", "Show 5H remaining"), _selectedPeriod == QuotaPeriod.FiveHours,
             () => PeriodSelected?.Invoke(QuotaPeriod.FiveHours)));

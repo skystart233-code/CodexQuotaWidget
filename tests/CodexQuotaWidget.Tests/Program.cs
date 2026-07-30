@@ -24,6 +24,7 @@ var tests = new (string Name, Func<Task> Run)[]
     ("重置卡倒计时文案", () => RunSync(TestResetCreditCountdown)),
     ("重置卡提醒分级", () => RunSync(TestResetReminderPolicy)),
     ("周余量低于 5% 整体预警", () => RunSync(TestWeeklyCriticalAlert)),
+    ("仅识别 Codex 桌面端进程", () => RunSync(TestCodexDesktopProcessClassifier)),
     ("托盘 Emoji 只接受一个字形", () => RunSync(TestTrayEmojiValue)),
     ("JSON-RPC 行解析", () => RunSync(TestLineParser)),
     ("JSON-RPC 请求 ID 关联", TestRequestCorrelation)
@@ -159,6 +160,17 @@ static void TestWeeklyCriticalAlert()
     False(WeeklyQuotaAlertPolicy.IsCritical(new QuotaValue(
         QuotaPeriod.Week, true, 95, 5, 10080, null)));
     False(WeeklyQuotaAlertPolicy.IsCritical(QuotaValue.Unavailable(QuotaPeriod.Week)));
+}
+
+static void TestCodexDesktopProcessClassifier()
+{
+    True(CodexDesktopProcessClassifier.IsDesktopApp(
+        "Codex", @"C:\Program Files\WindowsApps\OpenAI.Codex_26.0_x64__2p2nqsd0c76g0\app\Codex.exe", false));
+    True(CodexDesktopProcessClassifier.IsDesktopApp("codex", null, true));
+    False(CodexDesktopProcessClassifier.IsDesktopApp("codex", null, false));
+    False(CodexDesktopProcessClassifier.IsDesktopApp("node", @"C:\tools\codex.exe", true));
+    True(CodexDesktopProcessClassifier.IsCodexDesktopPackage("OpenAI.Codex_2p2nqsd0c76g0"));
+    False(CodexDesktopProcessClassifier.IsCodexDesktopPackage("OpenAI.ChatGPT_2p2nqsd0c76g0"));
 }
 
 static void TestTrayEmojiValue()
