@@ -27,7 +27,7 @@ A tiny Windows widget for Codex's 5-hour and weekly limits. It stays out of the 
 | 你看到的 | 它告诉你的事 |
 | --- | --- |
 | `5H 72%` | 当前 5 小时窗口还剩多少 |
-| `周 96% · 5H重置 2时` | 周额度够不够，以及**当前 5H 额度**多久重置 |
+| `2时 · 周 96%` | **当前 5H 额度**多久重置，以及周额度够不够 |
 | `卡 2天6时` | 有重置卡将在 3 天内到期，应该优先用掉 |
 | 整个浮窗变红 | 5H 或周额度任一项低于 5%，该留点余量了 |
 
@@ -36,7 +36,7 @@ A tiny Windows widget for Codex's 5-hour and weekly limits. It stays out of the 
 正常的极简模式会把主额度放左侧、另一条额度和**主额度的重置倒计时**放右侧：
 
 ```text
-● 5H 72% │ 周 96% · 5H重置 2时
+● 5H 72% │ 2时 · 周 96%
 ```
 
 如果最近一张重置卡在 3 天内到期，右侧自动切换为卡的倒计时：
@@ -93,7 +93,7 @@ The worst time to discover a Codex limit is in the middle of a good run.
 | What you see | What it means |
 | --- | --- |
 | `5H 72%` | What remains in the current five-hour window |
-| `Wk 96% · 5H resets 2h` | Your weekly headroom, plus when the **current 5H limit** resets |
+| `2h · Wk 96%` | When the **current 5H limit** resets, plus your weekly headroom |
 | `Card 2d 6h` | A reset card expires within three days, so it takes priority |
 | The whole widget turns red | Either the 5-hour or weekly limit is below 5%; time to leave some headroom |
 
@@ -102,7 +102,7 @@ The worst time to discover a Codex limit is in the middle of a good run.
 In its usual minimal mode, the left side shows the selected quota. The right side shows the other quota and the **selected quota's reset countdown**:
 
 ```text
-● 5H 72% │ Wk 96% · 5H resets 2h
+● 5H 72% │ 2h · Wk 96%
 ```
 
 When the nearest reset card expires within three days, the right side becomes the card countdown instead:

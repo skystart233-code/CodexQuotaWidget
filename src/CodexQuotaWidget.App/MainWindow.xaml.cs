@@ -299,13 +299,12 @@ public partial class MainWindow : Window
         {
             var label = PeriodLabel(quota.Period);
             var selectedLabel = PeriodLabel(_selectedPeriod);
-            var resetText = display.SelectedQuotaResetsAt is DateTimeOffset resetsAt
+            MiniSecondaryText.Text = display.SelectedQuotaResetsAt is DateTimeOffset resetsAt
                 ? UiText.For(
                     _language,
-                    $" · {selectedLabel}重置 {UiText.QuotaResetCountdown(_language, DateTimeOffset.Now, resetsAt)}",
-                    $" · {selectedLabel} resets {UiText.QuotaResetCountdown(_language, DateTimeOffset.Now, resetsAt)}")
-                : string.Empty;
-            MiniSecondaryText.Text = $"{label} {remaining:0.#}%{resetText}";
+                    $"{UiText.QuotaResetCountdown(_language, DateTimeOffset.Now, resetsAt)} · {label} {remaining:0.#}%",
+                    $"{UiText.QuotaResetCountdown(_language, DateTimeOffset.Now, resetsAt)} · {label} {remaining:0.#}%")
+                : $"{label} {remaining:0.#}%";
             MiniSecondaryText.ToolTip = display.SelectedQuotaResetsAt is DateTimeOffset localResetsAt
                 ? UiText.For(
                     _language,
