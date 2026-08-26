@@ -20,7 +20,7 @@
                            VerticalAlignment="Center" />
                 <TextBlock x:Name="MiniDivider" Text="│" FontSize="11" Margin="8,0,8,0"
                            VerticalAlignment="Center" />
-                <TextBlock x:Name="MiniResetCountdownText" Text="卡 --" FontSize="11" FontWeight="SemiBold"
+                <TextBlock x:Name="MiniSecondaryText" Text="--" FontSize="11" FontWeight="SemiBold"
                            VerticalAlignment="Center" />
             </StackPanel>
 

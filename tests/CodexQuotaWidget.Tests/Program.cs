@@ -24,6 +24,7 @@ var tests = new (string Name, Func<Task> Run)[]
     ("解析重置卡发放和到期时间", () => RunSync(TestResetCreditsMapper)),
     ("重置卡倒计时文案", () => RunSync(TestResetCreditCountdown)),
     ("重置卡提醒分级", () => RunSync(TestResetReminderPolicy)),
+    ("极简模式优先展示另一条额度，重置卡三天内置顶", () => RunSync(TestMinimalSecondaryDisplay)),
     ("5H 或周余量低于 5% 整体预警", () => RunSync(TestQuotaCriticalAlert)),
     ("仅识别 Codex 桌面端进程", () => RunSync(TestCodexDesktopProcessClassifier)),
     ("托盘 Emoji 只接受一个字形", () => RunSync(TestTrayEmojiValue)),
@@ -166,6 +167,33 @@ static void TestResetReminderPolicy()
     Equal(ResetReminderLevel.Expired, ResetReminderPolicy.Evaluate(now, now.AddMinutes(-1), 2, true));
     Equal(ResetReminderLevel.None, ResetReminderPolicy.Evaluate(now, now.AddMinutes(30), 0, true));
     Equal(ResetReminderLevel.None, ResetReminderPolicy.Evaluate(now, now.AddMinutes(30), 2, false));
+}
+
+static void TestMinimalSecondaryDisplay()
+{
+    var now = new DateTimeOffset(2030, 1, 1, 12, 0, 0, TimeSpan.FromHours(8));
+    var fiveHours = new QuotaValue(QuotaPeriod.FiveHours, true, 12, 88, 300, now.AddHours(2));
+    var week = new QuotaValue(QuotaPeriod.Week, true, 34, 66, 10080, now.AddDays(6));
+    var snapshot = new QuotaSnapshot(fiveHours, week, 1, now);
+
+    var regular = MinimalSecondaryDisplayPolicy.Select(
+        QuotaPeriod.FiveHours, snapshot, 1, now.AddDays(4), now);
+    Equal(MinimalSecondaryKind.OtherQuota, regular.Kind);
+    Equal(QuotaPeriod.Week, regular.Quota!.Period);
+
+    var urgentCard = MinimalSecondaryDisplayPolicy.Select(
+        QuotaPeriod.FiveHours, snapshot, 1, now.AddDays(3), now);
+    Equal(MinimalSecondaryKind.ResetCredit, urgentCard.Kind);
+
+    var switchedMain = MinimalSecondaryDisplayPolicy.Select(
+        QuotaPeriod.Week, snapshot, 1, now.AddDays(4), now);
+    Equal(MinimalSecondaryKind.OtherQuota, switchedMain.Kind);
+    Equal(QuotaPeriod.FiveHours, switchedMain.Quota!.Period);
+
+    var oneWindow = new QuotaSnapshot(fiveHours, QuotaValue.Unavailable(QuotaPeriod.Week), 1, now);
+    var fallbackCard = MinimalSecondaryDisplayPolicy.Select(
+        QuotaPeriod.FiveHours, oneWindow, 1, now.AddDays(4), now);
+    Equal(MinimalSecondaryKind.ResetCredit, fallbackCard.Kind);
 }
 
 static void TestQuotaCriticalAlert()

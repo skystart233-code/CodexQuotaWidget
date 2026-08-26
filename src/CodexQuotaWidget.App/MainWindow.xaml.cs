@@ -28,6 +28,7 @@ public partial class MainWindow : Window
     private int? _selectedWindowDurationMins;
     private bool _selectedValueAvailable;
     private bool _hasSnapshot;
+    private QuotaSnapshot? _snapshot;
     private readonly DispatcherTimer _countdownTimer;
 
     public MainWindow(
@@ -44,7 +45,11 @@ public partial class MainWindow : Window
         {
             Interval = TimeSpan.FromSeconds(30)
         };
-        _countdownTimer.Tick += (_, _) => UpdateResetCardText();
+        _countdownTimer.Tick += (_, _) =>
+        {
+            UpdateResetCardText();
+            UpdateMinimalSecondary();
+        };
         _countdownTimer.Start();
         SetLanguage(language);
         SetSelectedPeriod(selectedPeriod);
@@ -94,6 +99,7 @@ public partial class MainWindow : Window
         SetSelectedPeriod(_selectedPeriod);
         UpdateQuotaDetails();
         UpdateResetCardText();
+        UpdateMinimalSecondary();
         if (!_hasSnapshot)
         {
             StatusText.Text = UiText.For(language, "正在启动…", "Starting…");
@@ -108,6 +114,7 @@ public partial class MainWindow : Window
             ? UiText.For(_language, "5H 剩余", "5H remaining")
             : UiText.For(_language, "周额度剩余", "Weekly remaining");
         MiniPeriodText.Text = label;
+        UpdateMinimalSecondary();
     }
 
     public void SetFollowCodexLifecycle(bool enabled) => _followCodexLifecycle = enabled;
@@ -137,6 +144,7 @@ public partial class MainWindow : Window
         _resetCreditExpiresAt = expiresAt;
         _resetReminderEnabled = enabled;
         UpdateResetCardText();
+        UpdateMinimalSecondary();
     }
 
     public void SetResetCredits(IReadOnlyList<ResetCredit> credits, bool reminderEnabled)
@@ -153,12 +161,14 @@ public partial class MainWindow : Window
         _resetCreditExpiresAt = nearest?.ExpiresAt;
         _resetReminderEnabled = reminderEnabled;
         UpdateResetCardText();
+        UpdateMinimalSecondary();
     }
 
     public void SetResetReminderEnabled(bool enabled)
     {
         _resetReminderEnabled = enabled;
         UpdateResetCardText();
+        UpdateMinimalSecondary();
     }
 
     public void RenderSnapshot(QuotaSnapshot snapshot, QuotaPeriod period)
@@ -169,6 +179,7 @@ public partial class MainWindow : Window
         }
         _isQuotaCritical = QuotaAlertPolicy.IsAnyCritical(snapshot);
         _hasSnapshot = true;
+        _snapshot = snapshot;
         SetSelectedPeriod(period);
         var value = snapshot.Get(period);
         _selectedResetsAt = value.ResetsAt;
@@ -224,23 +235,16 @@ public partial class MainWindow : Window
         ResetCardText.Text = _resetCreditCount is int count
             ? UiText.For(_language, $"重置卡 {count} 张", $"Reset cards {count}")
             : UiText.For(_language, "重置卡 --", "Reset cards --");
-        var showCountdown = _resetCreditCount is > 0;
-        MiniDivider.Visibility = showCountdown ? Visibility.Visible : Visibility.Collapsed;
-        MiniResetCountdownText.Visibility = showCountdown ? Visibility.Visible : Visibility.Collapsed;
         if (_resetCreditExpiresAt is DateTimeOffset expiresAt)
         {
             var countdown = UiText.ResetCardCountdown(_language, DateTimeOffset.Now, expiresAt);
             ResetExpiryText.Text = UiText.For(_language, $"最近 {countdown}", $"Next {countdown}");
-            MiniResetCountdownText.Text = UiText.For(_language, $"卡 {countdown}", $"Card {countdown}");
             var localExpiry = expiresAt.ToLocalTime();
             var issued = _resetCreditIssuedAt is DateTimeOffset issuedAt
                 ? UiText.For(_language,
                     $"\n发放：{issuedAt.ToLocalTime():MM-dd HH:mm}",
                     $"\nIssued {issuedAt.ToLocalTime():MM-dd HH:mm}")
                 : string.Empty;
-            MiniResetCountdownText.ToolTip = UiText.For(_language,
-                $"最早到期：{localExpiry:MM-dd HH:mm}{issued}",
-                $"Next expiry: {localExpiry:MM-dd HH:mm}{issued}");
             ResetCardPanel.ToolTip = UiText.For(_language,
                 $"最早到期：{localExpiry:yyyy-MM-dd HH:mm}{issued}\n通知：{(_resetReminderEnabled ? "已开启" : "已关闭")}（右键切换）",
                 $"Next expiry: {localExpiry:yyyy-MM-dd HH:mm}{issued}\nNotifications: {(_resetReminderEnabled ? "On" : "Off")} (right-click to change)");
@@ -250,9 +254,61 @@ public partial class MainWindow : Window
             ResetExpiryText.Text = _resetCreditCount is 0
                 ? UiText.For(_language, "暂无可用卡", "No cards available")
                 : UiText.For(_language, "正在查询到期时间", "Checking expiry…");
-            MiniResetCountdownText.Text = UiText.For(_language, "卡 --", "Card --");
-            MiniResetCountdownText.ToolTip = null;
         }
+    }
+
+    private void UpdateMinimalSecondary()
+    {
+        if (_snapshot is null)
+        {
+            MiniDivider.Visibility = Visibility.Collapsed;
+            MiniSecondaryText.Visibility = Visibility.Collapsed;
+            MiniSecondaryText.ToolTip = null;
+            return;
+        }
+
+        var display = MinimalSecondaryDisplayPolicy.Select(
+            _selectedPeriod,
+            _snapshot,
+            _resetCreditCount,
+            _resetCreditExpiresAt,
+            DateTimeOffset.Now);
+        var visible = display.Kind != MinimalSecondaryKind.None;
+        MiniDivider.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        MiniSecondaryText.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+
+        if (display.Kind == MinimalSecondaryKind.ResetCredit && display.ResetCreditExpiresAt is DateTimeOffset expiresAt)
+        {
+            var localExpiry = expiresAt.ToLocalTime();
+            MiniSecondaryText.Text = UiText.For(
+                _language,
+                $"卡 {UiText.ResetCardCountdown(_language, DateTimeOffset.Now, expiresAt)}",
+                $"Card {UiText.ResetCardCountdown(_language, DateTimeOffset.Now, expiresAt)}");
+            MiniSecondaryText.ToolTip = UiText.For(
+                _language,
+                $"最近重置卡到期：{localExpiry:yyyy-MM-dd HH:mm}",
+                $"Next reset card expires: {localExpiry:yyyy-MM-dd HH:mm}");
+            return;
+        }
+
+        if (display.Kind == MinimalSecondaryKind.OtherQuota && display.Quota is { RemainingPercent: double remaining } quota)
+        {
+            var label = quota.Period == QuotaPeriod.FiveHours ? "5H" : UiText.For(_language, "周", "Wk");
+            var resetText = quota.ResetsAt is DateTimeOffset resetsAt
+                ? $" · {UiText.QuotaResetCountdown(_language, DateTimeOffset.Now, resetsAt)}"
+                : string.Empty;
+            MiniSecondaryText.Text = $"{label} {remaining:0.#}%{resetText}";
+            MiniSecondaryText.ToolTip = quota.ResetsAt is DateTimeOffset localResetsAt
+                ? UiText.For(
+                    _language,
+                    $"{label}额度 {remaining:0.#}% · 重置 {localResetsAt.ToLocalTime():MM-dd HH:mm}",
+                    $"{label} quota {remaining:0.#}% · resets {localResetsAt.ToLocalTime():MM-dd HH:mm}")
+                : UiText.For(_language, $"{label}额度 {remaining:0.#}%", $"{label} quota {remaining:0.#}%");
+            return;
+        }
+
+        MiniSecondaryText.Text = "--";
+        MiniSecondaryText.ToolTip = null;
     }
 
     private void ApplyVisualState()
@@ -270,7 +326,7 @@ public partial class MainWindow : Window
             MiniPeriodText.Foreground = secondary;
             MiniValueText.Foreground = primary;
             MiniDivider.Foreground = Brush("#78FFFFFF");
-            MiniResetCountdownText.Foreground = secondary;
+            MiniSecondaryText.Foreground = secondary;
             ValueText.Foreground = primary;
             AvailabilityText.Foreground = secondary;
             ResetCardText.Foreground = secondary;
@@ -291,7 +347,7 @@ public partial class MainWindow : Window
         PeriodText.Foreground = Brush(palette.Primary);
         MiniPeriodText.Foreground = Brush(palette.Secondary);
         MiniDivider.Foreground = Brush(palette.Border);
-        MiniResetCountdownText.Foreground = Brush(palette.Secondary);
+        MiniSecondaryText.Foreground = Brush(palette.Secondary);
         AvailabilityText.Foreground = Brush(palette.Muted);
         ResetCardPanel.Background = Brush(palette.Panel);
         ResetCardText.Foreground = Brush(palette.Secondary);

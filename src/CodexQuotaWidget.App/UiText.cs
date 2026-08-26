@@ -41,4 +41,7 @@ internal static class UiText
 
         return $"{Math.Max(1, remaining.Minutes)}m";
     }
+
+    public static string QuotaResetCountdown(UiLanguage language, DateTimeOffset now, DateTimeOffset resetsAt) =>
+        ResetCardCountdown(language, now, resetsAt);
 }

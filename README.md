@@ -27,7 +27,7 @@
 | 场景 | CodexQuotaWidget 的解法 |
 | --- | --- |
 | 分不清是 5 小时额度还是周额度快用完了 | 一键切换两种额度视图，直接显示真实剩余百分比 |
-| 桌面太乱，不想再多个大窗口 | 极简模式，只留额度数字和倒计时，安静地待在角落 |
+| 桌面太乱，不想再多个大窗口 | 极简模式：左侧主额度，右侧自动显示另一条额度和重置倒计时；重置卡 3 天内到期时自动置顶提醒 |
 | 快用完了却没及时发现 | 5 小时或周额度低于 5% 时整个窗口变红，肉眼可见的警告 |
 | 记不清额度什么时候重置 | 自动追踪最近的重置时间，提前 24h / 6h / 1h 弹托盘提醒 |
 | 想要更贴合自己的使用习惯 | 四套主题、可自定义托盘图标、中英文一键切换 |
@@ -74,7 +74,7 @@ Ever been interrupted by a Codex limit right in the middle of a flow — only to
 | Situation | What CodexQuotaWidget does |
 | --- | --- |
 | Not sure whether the 5-hour or weekly quota is the one running out | Switch between both views and see the actual remaining percentage |
-| Your desktop already has enough windows | Use minimal mode: just the quota and next countdown, quietly in the corner |
+| Your desktop already has enough windows | Use minimal mode: the primary quota stays on the left while the other quota and its reset countdown stay on the right; an expiring reset card takes priority in its final 3 days |
 | You notice the limit only after it interrupts you | The whole widget turns red when either 5-hour or weekly quota drops below 5% |
 | You cannot remember when a quota resets | Tracks the nearest reset-card expiry and notifies you at 24h / 6h / 1h |
 | You want it to feel like your setup | Pick from four themes, set a custom tray emoji, or switch Chinese / English instantly |
