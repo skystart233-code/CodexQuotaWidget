@@ -10,10 +10,11 @@ public enum MinimalSecondaryKind
 public sealed record MinimalSecondaryDisplay(
     MinimalSecondaryKind Kind,
     QuotaValue? Quota,
-    DateTimeOffset? ResetCreditExpiresAt)
+    DateTimeOffset? ResetCreditExpiresAt,
+    DateTimeOffset? SelectedQuotaResetsAt)
 {
     public static MinimalSecondaryDisplay None { get; } =
-        new(MinimalSecondaryKind.None, null, null);
+        new(MinimalSecondaryKind.None, null, null, null);
 }
 
 public static class MinimalSecondaryDisplayPolicy
@@ -27,12 +28,17 @@ public static class MinimalSecondaryDisplayPolicy
         DateTimeOffset? resetCreditExpiresAt,
         DateTimeOffset now)
     {
+        // The compact row is context for the quota on the left. Keep that quota's
+        // reset time even while the right side shows the other quota.
+        var selectedQuotaResetsAt = snapshot.Get(selectedPeriod).ResetsAt;
+
         if (HasUrgentResetCredit(resetCreditCount, resetCreditExpiresAt, now))
         {
             return new MinimalSecondaryDisplay(
                 MinimalSecondaryKind.ResetCredit,
                 null,
-                resetCreditExpiresAt);
+                resetCreditExpiresAt,
+                selectedQuotaResetsAt);
         }
 
         var otherPeriod = selectedPeriod == QuotaPeriod.FiveHours
@@ -44,7 +50,8 @@ public static class MinimalSecondaryDisplayPolicy
             return new MinimalSecondaryDisplay(
                 MinimalSecondaryKind.OtherQuota,
                 otherQuota,
-                null);
+                null,
+                selectedQuotaResetsAt);
         }
 
         // When Codex only returns one window, a known reset card is still more useful
@@ -54,7 +61,8 @@ public static class MinimalSecondaryDisplayPolicy
             return new MinimalSecondaryDisplay(
                 MinimalSecondaryKind.ResetCredit,
                 null,
-                expiresAt);
+                expiresAt,
+                selectedQuotaResetsAt);
         }
 
         return MinimalSecondaryDisplay.None;

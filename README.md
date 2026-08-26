@@ -2,15 +2,15 @@
 
 # ⚡ CodexQuotaWidget
 
-### 别再手动查额度了，让它一直挂在你的桌面右上角
+### Keep your Codex limits in sight — before they interrupt your flow.
 
-一个几乎零打扰的 Codex 额度浮窗——写代码写到一半，瞥一眼就知道还剩多少，快用完了它会主动变红提醒你。
+A tiny Windows widget for Codex's 5-hour and weekly limits. It stays out of the way, tells you what remains, and makes the next reset impossible to miss.
 
-[![Release](https://img.shields.io/github/v/release/skystart233-code/CodexQuotaWidget)](https://github.com/skystart233-code/CodexQuotaWidget/releases/latest)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows-0078D6)](README.md)
+[![Latest release](https://img.shields.io/github/v/release/skystart233-code/CodexQuotaWidget?label=release)](https://github.com/skystart233-code/CodexQuotaWidget/releases/latest)
+[![Windows](https://img.shields.io/badge/platform-Windows-0078D6)](https://github.com/skystart233-code/CodexQuotaWidget/releases/latest)
+[![MIT License](https://img.shields.io/badge/license-MIT-1f6feb)](LICENSE)
 
-[⬇️ 下载最新版](https://github.com/skystart233-code/CodexQuotaWidget/releases/latest) · [中文](#中文) · [English](#english) · [隐私说明](SECURITY.md)
+[⬇ Download for Windows](https://github.com/skystart233-code/CodexQuotaWidget/releases/latest) · [中文](#中文) · [English](#english) · [Privacy](SECURITY.md)
 
 </div>
 
@@ -18,41 +18,60 @@
 
 ## 中文
 
-你是不是也遇到过这种情况：正在用 Codex 写代码，突然被限速打断，才发现额度早就见底了，而自己完全没有察觉。
+写得正顺，最不该发生的事，就是被 Codex 的额度上限突然打断。
 
-**CodexQuotaWidget** 就是为了解决这个问题而做的——一个常驻在屏幕角落、几乎不占地方的小浮窗，把你的 Codex 额度状态一直摆在眼前，不用切标签、不用敲命令，抬头就能看到。
+**CodexQuotaWidget** 只做一件事：在你来得及调整节奏之前，把 **5H、周额度和下次重置时间** 放在桌面一眼可见的位置。它不占任务栏、不要求你切网页，也不打断正在写的代码。
 
-### 它能帮你做什么
+### 一眼就知道现在该不该收手
 
-| 场景 | CodexQuotaWidget 的解法 |
+| 你看到的 | 它告诉你的事 |
 | --- | --- |
-| 分不清是 5 小时额度还是周额度快用完了 | 一键切换两种额度视图，直接显示真实剩余百分比 |
-| 桌面太乱，不想再多个大窗口 | 极简模式：左侧主额度，右侧自动显示另一条额度和重置倒计时；重置卡 3 天内到期时自动置顶提醒 |
-| 快用完了却没及时发现 | 5 小时或周额度低于 5% 时整个窗口变红，肉眼可见的警告 |
-| 记不清额度什么时候重置 | 自动追踪最近的重置时间，提前 24h / 6h / 1h 弹托盘提醒 |
-| 想要更贴合自己的使用习惯 | 四套主题、可自定义托盘图标、中英文一键切换 |
-| 不想让它占用任务栏或碍事 | 可自由拖动、随内容自适应大小，关闭即收进系统托盘 |
-| 希望它只在使用 Codex 时出现 | 打开“跟随 Codex 启动和关闭”：登录后静默等待，Codex 打开时显示，真正退出 Codex 后浮窗自动退出 |
+| `5H 72%` | 当前 5 小时窗口还剩多少 |
+| `周 96% · 5H重置 2时` | 周额度够不够，以及**当前 5H 额度**多久重置 |
+| `卡 2天6时` | 有重置卡将在 3 天内到期，应该优先用掉 |
+| 整个浮窗变红 | 5H 或周额度任一项低于 5%，该留点余量了 |
 
-### 30 秒开始用
+### 该显示什么，它有明确的优先级
 
-1. 前往 [Releases](https://github.com/skystart233-code/CodexQuotaWidget/releases/latest)，下载并解压 `CodexQuotaWidget-*-win-x64.zip`。
-2. 确认电脑已安装 [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)，并且 `codex` CLI 已登录且在系统 `PATH` 中。
-3. 双击运行 `CodexQuotaWidget.App.exe`。右键浮窗或托盘图标，随时切换语言、主题、额度视图和图标。
+正常的极简模式会把主额度放左侧、另一条额度和**主额度的重置倒计时**放右侧：
 
-就这么简单，不需要额外配置。
+```text
+● 5H 72% │ 周 96% · 5H重置 2时
+```
 
-> 5 小时限制恢复后，浮窗会与周额度分开读取和显示。它按返回的窗口时长识别额度，不依赖 `primary / secondary` 的字段顺序；右键浮窗即可在 **5H 剩余** 与 **周额度剩余** 间切换。
+如果最近一张重置卡在 3 天内到期，右侧自动切换为卡的倒计时：
 
-> 想让它真正“跟着 Codex 走”？右键浮窗或托盘图标，勾选 **跟随 Codex 启动和关闭**。它会为当前 Windows 用户登记一个轻量后台等待器：登录后不显示浮窗，等你打开 Codex 才启动；退出 Codex 后浮窗也会在几秒内退出。随时取消勾选即可关闭此行为。
+```text
+● 5H 72% │ 卡 2天6时
+```
 
-### 关于隐私,你可以放心
+切到周额度时也是同一套逻辑：右侧会显示 5H 余量与**周额度**的下次重置。没有模糊的“这是谁的倒计时”。
 
-所有额度数据都直接来自你本机已登录的 `codex app-server`，不涉及任何网页抓取。重置时间的查询也只使用你本机现有的登录凭据，查询结果和个人偏好设置全部保存在本地的 `%LOCALAPPDATA%\CodexQuotaWidget` 目录下。整个过程不会上传任何 token、额度信息或使用记录到任何第三方服务器,细节可以查看 [SECURITY.md](SECURITY.md)。
+### 30 秒上手
 
-> 小提示：Codex 官方接口如果发生变动，重置时间查询可能会暂时失效，但这不影响额度浮窗的正常显示，它会保留最近一次成功获取的倒计时。
+1. 从 [Releases](https://github.com/skystart233-code/CodexQuotaWidget/releases/latest) 下载并解压 `CodexQuotaWidget-*-win-x64.zip`。
+2. 安装 [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)。确保 `codex` CLI 已登录，并且在系统 `PATH` 中。
+3. 双击 `CodexQuotaWidget.App.exe`。
+4. 右键浮窗或托盘图标，即可切换 **5H / 周额度**、主题、语言、托盘 Emoji 与跟随 Codex 模式。
 
-### 想从源码运行？
+完成。关闭窗口会收进系统托盘，不会消失。
+
+### 小到不碍眼，也足够顺手
+
+- 极简 / 完整两种浮窗，按内容自动收放，任意拖拽。
+- 深夜蓝、石墨黑、纸张白、极光绿四套主题。
+- 自定义彩色 Emoji 托盘图标。
+- 5H 与周额度低于 5% 时整体变红。
+- 最近重置卡将在 24 小时、6 小时、1 小时到期时托盘提醒。
+- 可选“跟随 Codex 启动和关闭”：登录后静默等待，打开 Codex 才显示；真正退出 Codex 后浮窗也会退出。
+
+### 隐私，没有绕弯子
+
+额度直接由你本机已登录的 `codex app-server` 读取；不会抓网页。重置卡信息只使用本机已有登录凭据。偏好设置与最近一次成功读取的结果只保存在 `%LOCALAPPDATA%\CodexQuotaWidget`，不会上传 token、额度数据或使用记录。
+
+完整边界见 [SECURITY.md](SECURITY.md)。如果 Codex 内部接口变化，重置卡查询可能暂时不可用；额度浮窗仍会继续工作，并保留最近一次成功的卡片倒计时。
+
+### 从源码运行
 
 ```powershell
 dotnet restore --ignore-failed-sources
@@ -65,39 +84,58 @@ dotnet run --project .\src\CodexQuotaWidget.App\CodexQuotaWidget.App.csproj
 
 ## English
 
-Ever been interrupted by a Codex limit right in the middle of a flow — only to realise your quota had been running low for a while?
+The worst time to discover a Codex limit is in the middle of a good run.
 
-**CodexQuotaWidget** keeps a tiny, always-on quota view in the corner of your screen. No tab switching, no terminal command, no digging through settings: just look up and know where you stand.
+**CodexQuotaWidget** does one job: it keeps your **5-hour limit, weekly limit, and next reset** visible before you need them. No browser tab, no terminal command, no extra taskbar window — just the information that protects your flow.
 
-### What it solves
+### Know what matters at a glance
 
-| Situation | What CodexQuotaWidget does |
+| What you see | What it means |
 | --- | --- |
-| Not sure whether the 5-hour or weekly quota is the one running out | Switch between both views and see the actual remaining percentage |
-| Your desktop already has enough windows | Use minimal mode: the primary quota stays on the left while the other quota and its reset countdown stay on the right; an expiring reset card takes priority in its final 3 days |
-| You notice the limit only after it interrupts you | The whole widget turns red when either 5-hour or weekly quota drops below 5% |
-| You cannot remember when a quota resets | Tracks the nearest reset-card expiry and notifies you at 24h / 6h / 1h |
-| You want it to feel like your setup | Pick from four themes, set a custom tray emoji, or switch Chinese / English instantly |
-| You do not want another taskbar app in the way | Drag it anywhere, let it size itself to content, and close it back to the system tray |
-| You only want it while Codex is open | Enable “Follow Codex start and exit”: it waits quietly after sign-in, appears with Codex, and exits when Codex truly quits |
+| `5H 72%` | What remains in the current five-hour window |
+| `Wk 96% · 5H resets 2h` | Your weekly headroom, plus when the **current 5H limit** resets |
+| `Card 2d 6h` | A reset card expires within three days, so it takes priority |
+| The whole widget turns red | Either the 5-hour or weekly limit is below 5%; time to leave some headroom |
 
-### Get started in 30 seconds
+### A compact display with deliberate priorities
 
-1. Go to [Releases](https://github.com/skystart233-code/CodexQuotaWidget/releases/latest), download, and unzip `CodexQuotaWidget-*-win-x64.zip`.
-2. Install the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0), then make sure the signed-in `codex` CLI is on your system `PATH`.
-3. Double-click `CodexQuotaWidget.App.exe`. Right-click the widget or tray icon whenever you want to switch language, theme, quota view, or emoji.
+In its usual minimal mode, the left side shows the selected quota. The right side shows the other quota and the **selected quota's reset countdown**:
 
-That is it — no extra setup needed.
+```text
+● 5H 72% │ Wk 96% · 5H resets 2h
+```
 
-> With the 5-hour limit restored, the widget reads and displays it separately from the weekly allowance. It identifies quota windows by their duration rather than the `primary` / `secondary` field order; right-click to switch between **5H remaining** and **Weekly remaining**.
+When the nearest reset card expires within three days, the right side becomes the card countdown instead:
 
-> Want it to genuinely follow Codex? Right-click the widget or tray icon and check **Follow Codex start and exit**. A lightweight per-user watcher waits silently after sign-in, starts the widget when Codex opens, then closes it a few seconds after Codex quits. Uncheck it any time to turn this behavior off.
+```text
+● 5H 72% │ Card 2d 6h
+```
 
-### Privacy, without the fine print
+Switch to the weekly view and the rule remains symmetrical: see the 5H balance and the next **weekly** reset. Every countdown has an owner.
 
-Quota data comes directly from the signed-in local `codex app-server`; there is no browser scraping. Reset-card lookup uses the credentials already on your machine, and results plus preferences stay in `%LOCALAPPDATA%\CodexQuotaWidget`. The app does not upload tokens, quota data, or activity records to any third party. See [SECURITY.md](SECURITY.md) for the details.
+### Start in 30 seconds
 
-> Heads-up: if Codex changes its APIs, reset-card lookup may temporarily stop working. Quota monitoring still works, and the widget keeps the last successfully retrieved countdown.
+1. Download and unzip `CodexQuotaWidget-*-win-x64.zip` from [Releases](https://github.com/skystart233-code/CodexQuotaWidget/releases/latest).
+2. Install the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0). Make sure the signed-in `codex` CLI is on your system `PATH`.
+3. Double-click `CodexQuotaWidget.App.exe`.
+4. Right-click the widget or tray icon to change the **5H / weekly view**, theme, language, tray emoji, or Follow Codex mode.
+
+That is all. Closing the window sends it to the system tray; it stays available.
+
+### Small on screen, complete in the details
+
+- Minimal and expanded views that resize to content and drag anywhere.
+- Four themes: Midnight, Graphite, Paper, and Aurora.
+- A custom, full-colour Emoji tray icon.
+- A red warning state when either quota drops below 5%.
+- Tray reminders at 24h, 6h, and 1h before the nearest reset card expires.
+- Optional **Follow Codex start and exit** mode: wait silently after Windows sign-in, appear when Codex opens, and exit shortly after Codex truly closes.
+
+### Privacy, plainly stated
+
+Quota data comes from your signed-in local `codex app-server`; the app does not scrape a browser. Reset-card lookup uses credentials already present on your machine. Preferences and the most recent successful result stay in `%LOCALAPPDATA%\CodexQuotaWidget`. The app does not upload tokens, quota data, or activity records.
+
+See [SECURITY.md](SECURITY.md) for the complete boundary. If Codex changes an internal interface, reset-card lookup may temporarily stop working; quota monitoring continues and the widget keeps the last successful card countdown.
 
 ### Run from source
 
@@ -110,7 +148,7 @@ dotnet run --project .\src\CodexQuotaWidget.App\CodexQuotaWidget.App.csproj
 
 ```powershell
 dotnet build .\CodexQuotaWidget.slnx --no-restore
-dotnet test .\CodexQuotaWidget.slnx --no-build
+dotnet run --project .\tests\CodexQuotaWidget.Tests\CodexQuotaWidget.Tests.csproj --no-build
 ```
 
-The repo is split into a small core, the Codex protocol client, the WPF app, and offline tests. Issues and practical ideas are welcome.
+The project is intentionally small: a core quota model, a local Codex protocol client, a WPF widget, and offline checks. Issues and practical ideas are welcome.

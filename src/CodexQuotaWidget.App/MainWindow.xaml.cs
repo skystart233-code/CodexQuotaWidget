@@ -47,6 +47,7 @@ public partial class MainWindow : Window
         };
         _countdownTimer.Tick += (_, _) =>
         {
+            UpdateQuotaDetails();
             UpdateResetCardText();
             UpdateMinimalSecondary();
         };
@@ -109,7 +110,7 @@ public partial class MainWindow : Window
     public void SetSelectedPeriod(QuotaPeriod period)
     {
         _selectedPeriod = period;
-        var label = period == QuotaPeriod.FiveHours ? "5H" : UiText.For(_language, "周", "Wk");
+        var label = PeriodLabel(period);
         PeriodText.Text = period == QuotaPeriod.FiveHours
             ? UiText.For(_language, "5H 剩余", "5H remaining")
             : UiText.For(_language, "周额度剩余", "Weekly remaining");
@@ -226,7 +227,10 @@ public partial class MainWindow : Window
         }
 
         AvailabilityText.Text = _selectedResetsAt is DateTimeOffset reset
-            ? UiText.For(_language, $"重置 {reset.ToLocalTime():MM-dd HH:mm}", $"Resets {reset.ToLocalTime():MM-dd HH:mm}")
+            ? UiText.For(
+                _language,
+                $"下次 {PeriodLabel(_selectedPeriod)} 重置 {reset.ToLocalTime():MM-dd HH:mm} · {UiText.QuotaResetCountdown(_language, DateTimeOffset.Now, reset)}",
+                $"{PeriodLabel(_selectedPeriod)} resets {reset.ToLocalTime():MM-dd HH:mm} · {UiText.QuotaResetCountdown(_language, DateTimeOffset.Now, reset)}")
             : UiText.For(_language, $"{_selectedWindowDurationMins} 分钟窗口", $"{_selectedWindowDurationMins} min window");
     }
 
@@ -293,16 +297,20 @@ public partial class MainWindow : Window
 
         if (display.Kind == MinimalSecondaryKind.OtherQuota && display.Quota is { RemainingPercent: double remaining } quota)
         {
-            var label = quota.Period == QuotaPeriod.FiveHours ? "5H" : UiText.For(_language, "周", "Wk");
-            var resetText = quota.ResetsAt is DateTimeOffset resetsAt
-                ? $" · {UiText.QuotaResetCountdown(_language, DateTimeOffset.Now, resetsAt)}"
-                : string.Empty;
-            MiniSecondaryText.Text = $"{label} {remaining:0.#}%{resetText}";
-            MiniSecondaryText.ToolTip = quota.ResetsAt is DateTimeOffset localResetsAt
+            var label = PeriodLabel(quota.Period);
+            var selectedLabel = PeriodLabel(_selectedPeriod);
+            var resetText = display.SelectedQuotaResetsAt is DateTimeOffset resetsAt
                 ? UiText.For(
                     _language,
-                    $"{label}额度 {remaining:0.#}% · 重置 {localResetsAt.ToLocalTime():MM-dd HH:mm}",
-                    $"{label} quota {remaining:0.#}% · resets {localResetsAt.ToLocalTime():MM-dd HH:mm}")
+                    $" · {selectedLabel}重置 {UiText.QuotaResetCountdown(_language, DateTimeOffset.Now, resetsAt)}",
+                    $" · {selectedLabel} resets {UiText.QuotaResetCountdown(_language, DateTimeOffset.Now, resetsAt)}")
+                : string.Empty;
+            MiniSecondaryText.Text = $"{label} {remaining:0.#}%{resetText}";
+            MiniSecondaryText.ToolTip = display.SelectedQuotaResetsAt is DateTimeOffset localResetsAt
+                ? UiText.For(
+                    _language,
+                    $"{label}额度 {remaining:0.#}% · 下次{selectedLabel}重置 {localResetsAt.ToLocalTime():MM-dd HH:mm}",
+                    $"{label} quota {remaining:0.#}% · {selectedLabel} resets {localResetsAt.ToLocalTime():MM-dd HH:mm}")
                 : UiText.For(_language, $"{label}额度 {remaining:0.#}%", $"{label} quota {remaining:0.#}%");
             return;
         }
@@ -310,6 +318,9 @@ public partial class MainWindow : Window
         MiniSecondaryText.Text = "--";
         MiniSecondaryText.ToolTip = null;
     }
+
+    private string PeriodLabel(QuotaPeriod period) =>
+        period == QuotaPeriod.FiveHours ? "5H" : UiText.For(_language, "周", "Wk");
 
     private void ApplyVisualState()
     {

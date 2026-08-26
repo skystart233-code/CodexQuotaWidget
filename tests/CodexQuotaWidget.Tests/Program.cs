@@ -14,7 +14,7 @@ if (args.Contains("--live-reset", StringComparer.OrdinalIgnoreCase))
 
 var tests = new (string Name, Func<Task> Run)[]
 {
-    ("300 分钟映射为 5H", () => RunSync(TestFiveHours)),
+    ("300 分钟映射为 5H 并保留重置时间", () => RunSync(TestFiveHours)),
     ("额度窗口字段改名仍可识别", () => RunSync(TestRenamedWindows)),
     ("10080 分钟映射为周额度且支持小数", () => RunSync(TestWeekDecimal)),
     ("primary=周/secondary=null 的窗口形状", () => RunSync(TestPrimaryWeekShape)),
@@ -61,9 +61,10 @@ static JsonElement Json(string value) => JsonDocument.Parse(value).RootElement.C
 static void TestFiveHours()
 {
     var snapshot = RateLimitsMapper.Map(Json("""
-        {"rateLimits":{"primary":{"usedPercent":23,"windowDurationMins":300},"secondary":null}}
+        {"rateLimits":{"primary":{"usedPercent":23,"windowDurationMins":300,"resetsAt":"2030-01-01T06:00:00Z"},"secondary":null}}
         """));
     Equal(77d, snapshot.FiveHours.RemainingPercent);
+    Equal(new DateTimeOffset(2030, 1, 1, 6, 0, 0, TimeSpan.Zero), snapshot.FiveHours.ResetsAt);
     False(snapshot.Week.IsAvailable);
 }
 
@@ -180,6 +181,7 @@ static void TestMinimalSecondaryDisplay()
         QuotaPeriod.FiveHours, snapshot, 1, now.AddDays(4), now);
     Equal(MinimalSecondaryKind.OtherQuota, regular.Kind);
     Equal(QuotaPeriod.Week, regular.Quota!.Period);
+    Equal(now.AddHours(2), regular.SelectedQuotaResetsAt);
 
     var urgentCard = MinimalSecondaryDisplayPolicy.Select(
         QuotaPeriod.FiveHours, snapshot, 1, now.AddDays(3), now);
@@ -189,6 +191,7 @@ static void TestMinimalSecondaryDisplay()
         QuotaPeriod.Week, snapshot, 1, now.AddDays(4), now);
     Equal(MinimalSecondaryKind.OtherQuota, switchedMain.Kind);
     Equal(QuotaPeriod.FiveHours, switchedMain.Quota!.Period);
+    Equal(now.AddDays(6), switchedMain.SelectedQuotaResetsAt);
 
     var oneWindow = new QuotaSnapshot(fiveHours, QuotaValue.Unavailable(QuotaPeriod.Week), 1, now);
     var fallbackCard = MinimalSecondaryDisplayPolicy.Select(
@@ -294,7 +297,7 @@ static async Task<int> RunLiveProbeAsync()
     return 0;
 
     static string Format(QuotaValue value) => value.IsAvailable
-        ? $"{value.RemainingPercent:0.#}%({value.WindowDurationMins}m)"
+        ? $"{value.RemainingPercent:0.#}%({value.WindowDurationMins}m; resets={value.ResetsAt:O})"
         : "unavailable";
 }
 
