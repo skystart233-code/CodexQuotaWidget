@@ -15,6 +15,7 @@ if (args.Contains("--live-reset", StringComparer.OrdinalIgnoreCase))
 var tests = new (string Name, Func<Task> Run)[]
 {
     ("300 分钟映射为 5H", () => RunSync(TestFiveHours)),
+    ("额度窗口字段改名仍可识别", () => RunSync(TestRenamedWindows)),
     ("10080 分钟映射为周额度且支持小数", () => RunSync(TestWeekDecimal)),
     ("primary=周/secondary=null 的窗口形状", () => RunSync(TestPrimaryWeekShape)),
     ("null 窗口明确不可用", () => RunSync(TestNullWindow)),
@@ -23,7 +24,7 @@ var tests = new (string Name, Func<Task> Run)[]
     ("解析重置卡发放和到期时间", () => RunSync(TestResetCreditsMapper)),
     ("重置卡倒计时文案", () => RunSync(TestResetCreditCountdown)),
     ("重置卡提醒分级", () => RunSync(TestResetReminderPolicy)),
-    ("周余量低于 5% 整体预警", () => RunSync(TestWeeklyCriticalAlert)),
+    ("5H 或周余量低于 5% 整体预警", () => RunSync(TestQuotaCriticalAlert)),
     ("仅识别 Codex 桌面端进程", () => RunSync(TestCodexDesktopProcessClassifier)),
     ("托盘 Emoji 只接受一个字形", () => RunSync(TestTrayEmojiValue)),
     ("JSON-RPC 行解析", () => RunSync(TestLineParser)),
@@ -63,6 +64,20 @@ static void TestFiveHours()
         """));
     Equal(77d, snapshot.FiveHours.RemainingPercent);
     False(snapshot.Week.IsAvailable);
+}
+
+static void TestRenamedWindows()
+{
+    var snapshot = RateLimitsMapper.Map(Json("""
+        {
+          "rateLimits": {
+            "fiveHourWindow": {"usedPercent": 12, "windowDurationMins": 300},
+            "weeklyWindow": {"usedPercent": 34, "windowDurationMins": 10080}
+          }
+        }
+        """));
+    Equal(88d, snapshot.FiveHours.RemainingPercent);
+    Equal(66d, snapshot.Week.RemainingPercent);
 }
 
 static void TestWeekDecimal()
@@ -153,13 +168,20 @@ static void TestResetReminderPolicy()
     Equal(ResetReminderLevel.None, ResetReminderPolicy.Evaluate(now, now.AddMinutes(30), 2, false));
 }
 
-static void TestWeeklyCriticalAlert()
+static void TestQuotaCriticalAlert()
 {
-    True(WeeklyQuotaAlertPolicy.IsCritical(new QuotaValue(
+    True(QuotaAlertPolicy.IsCritical(new QuotaValue(
         QuotaPeriod.Week, true, 95.1, 4.9, 10080, null)));
-    False(WeeklyQuotaAlertPolicy.IsCritical(new QuotaValue(
+    True(QuotaAlertPolicy.IsCritical(new QuotaValue(
+        QuotaPeriod.FiveHours, true, 97, 3, 300, null)));
+    False(QuotaAlertPolicy.IsCritical(new QuotaValue(
         QuotaPeriod.Week, true, 95, 5, 10080, null)));
-    False(WeeklyQuotaAlertPolicy.IsCritical(QuotaValue.Unavailable(QuotaPeriod.Week)));
+    False(QuotaAlertPolicy.IsCritical(QuotaValue.Unavailable(QuotaPeriod.FiveHours)));
+    True(QuotaAlertPolicy.IsAnyCritical(new QuotaSnapshot(
+        new QuotaValue(QuotaPeriod.FiveHours, true, 97, 3, 300, null),
+        new QuotaValue(QuotaPeriod.Week, true, 5, 95, 10080, null),
+        null,
+        DateTimeOffset.Now)));
 }
 
 static void TestCodexDesktopProcessClassifier()

@@ -22,7 +22,7 @@ public partial class MainWindow : Window
     private int? _resetCreditCount;
     private bool _hasResetCreditDetails;
     private bool _statusIsError;
-    private bool _weekIsCritical;
+    private bool _isQuotaCritical;
     private double? _selectedRemaining;
     private DateTimeOffset? _selectedResetsAt;
     private int? _selectedWindowDurationMins;
@@ -167,7 +167,7 @@ public partial class MainWindow : Window
         {
             _resetCreditCount = snapshot.ResetCreditCount;
         }
-        _weekIsCritical = WeeklyQuotaAlertPolicy.IsCritical(snapshot.Week);
+        _isQuotaCritical = QuotaAlertPolicy.IsAnyCritical(snapshot);
         _hasSnapshot = true;
         SetSelectedPeriod(period);
         var value = snapshot.Get(period);
@@ -258,7 +258,7 @@ public partial class MainWindow : Window
     private void ApplyVisualState()
     {
         var palette = ThemePalette.For(_theme);
-        if (_weekIsCritical)
+        if (_isQuotaCritical)
         {
             var primary = Brush("#FFFFFFFF");
             var secondary = Brush("#EFFFFFFF");

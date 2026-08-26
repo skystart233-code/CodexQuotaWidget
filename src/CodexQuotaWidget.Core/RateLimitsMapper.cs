@@ -15,10 +15,13 @@ public static class RateLimitsMapper
         var rateLimits = UnwrapRateLimits(payload);
         if (rateLimits.ValueKind == JsonValueKind.Object)
         {
-            foreach (var name in new[] { "primary", "secondary" })
+            // The app-server has historically named these primary/secondary, but the
+            // useful contract is the window duration. Enumerating every window keeps
+            // both 5H and weekly quotas working if Codex changes their ordering or names.
+            foreach (var property in rateLimits.EnumerateObject())
             {
-                if (!rateLimits.TryGetProperty(name, out var window) ||
-                    window.ValueKind != JsonValueKind.Object ||
+                var window = property.Value;
+                if (window.ValueKind != JsonValueKind.Object ||
                     !TryReadInt(window, "windowDurationMins", out var duration))
                 {
                     continue;

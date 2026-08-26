@@ -28,7 +28,7 @@
 | --- | --- |
 | 分不清是 5 小时额度还是周额度快用完了 | 一键切换两种额度视图，直接显示真实剩余百分比 |
 | 桌面太乱，不想再多个大窗口 | 极简模式，只留额度数字和倒计时，安静地待在角落 |
-| 快用完了却没及时发现 | 周额度低于 5% 时整个窗口变红，肉眼可见的警告 |
+| 快用完了却没及时发现 | 5 小时或周额度低于 5% 时整个窗口变红，肉眼可见的警告 |
 | 记不清额度什么时候重置 | 自动追踪最近的重置时间，提前 24h / 6h / 1h 弹托盘提醒 |
 | 想要更贴合自己的使用习惯 | 四套主题、可自定义托盘图标、中英文一键切换 |
 | 不想让它占用任务栏或碍事 | 可自由拖动、随内容自适应大小，关闭即收进系统托盘 |
@@ -41,6 +41,8 @@
 3. 双击运行 `CodexQuotaWidget.App.exe`。右键浮窗或托盘图标，随时切换语言、主题、额度视图和图标。
 
 就这么简单，不需要额外配置。
+
+> 5 小时限制恢复后，浮窗会与周额度分开读取和显示。它按返回的窗口时长识别额度，不依赖 `primary / secondary` 的字段顺序；右键浮窗即可在 **5H 剩余** 与 **周额度剩余** 间切换。
 
 > 想让它真正“跟着 Codex 走”？右键浮窗或托盘图标，勾选 **跟随 Codex 启动和关闭**。它会为当前 Windows 用户登记一个轻量后台等待器：登录后不显示浮窗，等你打开 Codex 才启动；退出 Codex 后浮窗也会在几秒内退出。随时取消勾选即可关闭此行为。
 
@@ -73,7 +75,7 @@ Ever been interrupted by a Codex limit right in the middle of a flow — only to
 | --- | --- |
 | Not sure whether the 5-hour or weekly quota is the one running out | Switch between both views and see the actual remaining percentage |
 | Your desktop already has enough windows | Use minimal mode: just the quota and next countdown, quietly in the corner |
-| You notice the limit only after it interrupts you | The whole widget turns red when weekly quota drops below 5% |
+| You notice the limit only after it interrupts you | The whole widget turns red when either 5-hour or weekly quota drops below 5% |
 | You cannot remember when a quota resets | Tracks the nearest reset-card expiry and notifies you at 24h / 6h / 1h |
 | You want it to feel like your setup | Pick from four themes, set a custom tray emoji, or switch Chinese / English instantly |
 | You do not want another taskbar app in the way | Drag it anywhere, let it size itself to content, and close it back to the system tray |
@@ -86,6 +88,8 @@ Ever been interrupted by a Codex limit right in the middle of a flow — only to
 3. Double-click `CodexQuotaWidget.App.exe`. Right-click the widget or tray icon whenever you want to switch language, theme, quota view, or emoji.
 
 That is it — no extra setup needed.
+
+> With the 5-hour limit restored, the widget reads and displays it separately from the weekly allowance. It identifies quota windows by their duration rather than the `primary` / `secondary` field order; right-click to switch between **5H remaining** and **Weekly remaining**.
 
 > Want it to genuinely follow Codex? Right-click the widget or tray icon and check **Follow Codex start and exit**. A lightweight per-user watcher waits silently after sign-in, starts the widget when Codex opens, then closes it a few seconds after Codex quits. Uncheck it any time to turn this behavior off.
 

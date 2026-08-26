@@ -27,9 +27,3 @@ public static class ResetCreditCountdown
         return $"{Math.Max(1, (int)Math.Ceiling(remaining.TotalMinutes))}分";
     }
 }
-
-public static class WeeklyQuotaAlertPolicy
-{
-    public static bool IsCritical(QuotaValue week) =>
-        week.IsAvailable && week.RemainingPercent is double remaining && remaining < 5d;
-}
