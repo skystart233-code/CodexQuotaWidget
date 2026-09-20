@@ -22,6 +22,8 @@
 
 你正在用 **OpenAI Codex** 心流写代码，突然弹出 rate limit 提示——才发现 5 小时额度或周额度早就见底了。切到终端查 `codex` 命令、翻设置页面找用量，每次都要打断思路。
 
+更常见的是：**5H 限额总在不知不觉间用完**。知道它会恢复并不够，真正麻烦的是记不住何时恢复、又不想一遍遍手动查询。CodexQuotaWidget 把当前 5H 的恢复倒计时留在视线里，让你在额度回来时不会错过继续工作的时机；如果账号里有 Reset Credit，它还会在到期前把卡片置顶并提醒你及时使用。
+
 **CodexQuotaWidget** 把 Codex quota status 钉在屏幕角落：
 
 - 不用切标签页、不用敲命令、不用翻设置。
@@ -230,6 +232,8 @@ dotnet run --project .\tests\CodexQuotaWidget.Tests\CodexQuotaWidget.Tests.cspro
 ### Why CodexQuotaWidget?
 
 You are in the zone with **OpenAI Codex**, then a rate-limit message lands. Your 5-hour or weekly quota had been running low for a while; checking the terminal or a settings page breaks the flow again.
+
+The recurring pain is usually the **5-hour limit**: it runs out before you notice, and knowing that it will reset is not the same as remembering when. CodexQuotaWidget keeps the 5H recovery countdown in your peripheral vision, so you do not miss the moment your quota becomes available again. If your account has Reset Credits, it also elevates the expiring card and reminds you to use it in time.
 
 **CodexQuotaWidget** pins Codex quota status to the corner of your screen:
 
